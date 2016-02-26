@@ -4,46 +4,33 @@
 
 ## Authors: SW and MW
 
-
-## TODOS: 1. Worm death 2. Raccoon birth and age structure 3. Infectivity with age
-source("raccoon_fxns.R")
-
-## Parameters
-
-## Raccoon parameters
-INIT_NUM_RACCOONS = 100
-DEATH_PROB = 0
-DEATH_THRESHOLD = 300 # Worms at which Raccoon is dead
-PATHOGENICITY = (1 - DEATH_PROB) / DEATH_THRESHOLD
-K = 50 # Karrying capacity --> exponential growth with threshold
+## Notes
+##
+## We are assuming (right now) an all female raccoon population and they are
+## only reproducing females.  We will modify this later (2-26-2016)
+##
+##
 
 
-# PARASITE PARAMETERS
-ENVIRONMENTAL_POOL = 0
-EGG_PRODUCTION_PER_WORM = 100 # eggs per month (note this is very wrong)
-ENCOUNTER_PROB = 1 # 100% probability that
-ENCOUNTER_MEAN = 100 # Probability of a raccoon and egg coming into contact
-INFECTIVITY = 0.5 # Probability of infectivity
-EGG_LOSS_PROB =  .14 # Probability that an egg survives of 7 months
+## TODO:
+## 1. Worm death in host
+## 2. Raccoon birth and age structure (Sort of, but no age-specific vital rates)
+## 3. Infectivity with age / Update survival function
 
-# Time parameters: Each time step is a month
-TIME_STEPS = 12
-
-# Set up the raccoon array
-raccoon_worm_array = array(10, dim=c(TIME_STEPS + 1, INIT_NUM_RACCOONS))
-raccoon_dead_alive_array = array(10, dim=c(TIME_STEPS + 1, INIT_NUM_RACCOONS))
-
-# Initialize all arrays
-raccoon_worm_array[1, ] = 0 # Initialize all raccoons with 10 worms
-raccoon_dead_alive_array[1, ] = 1 # All raccoons are alive
+source("raccoon_fxns.R") # Load in the helper functions
+source("raccoon_parameters.R") # Load in the parameters
+source("raccoon_init_arrays.R") # Load in the initial arrays
 
 # Loop through time steps
 for(time in 2:(TIME_STEPS + 1)){
+
+    new_babies = 0
 
     # Loop through raccoons
     for(rac in 1:dim(raccoon_worm_array)[2]){
 
         alive_then = raccoon_dead_alive_array[time - 1, rac]
+
 
         if(alive_then == 1){
 
@@ -52,10 +39,22 @@ for(time in 2:(TIME_STEPS + 1)){
                                                     DEATH_PROB, PATHOGENICITY)
             raccoon_dead_alive_array[time, rac] = alive_now
 
-            if(alive_now){
-                # 1. Deposit Eggs (ignoring for now)
 
-                # 2. Pick eggs
+            if(alive_now){
+
+                # 1. Give birth if appropriate
+                # Calculate age. Minus 1 to account for alive dead decision
+                age_now = initial_age_vector[rac] +
+                        sum(raccoon_dead_alive_array[, rac], na.rm=T) - 1
+                age_array[time, rac] = age_now
+                new_babies = new_babies + give_birth(age_now, time,
+                                                        MONTH_AT_REPRO,
+                                                        FIRST_REPRO_AGE,
+                                                        LITTER_SIZE)
+
+                # 2. Deposit Eggs (ignoring for now)
+
+                # 3. Pick eggs
                 worms_acquired = pick_up_eggs(ENCOUNTER_PROB, ENCOUNTER_MEAN, INFECTIVITY)
                 raccoon_worm_array[time, rac] = raccoon_worm_array[time - 1, rac] + worms_acquired
 
@@ -71,5 +70,23 @@ for(time in 2:(TIME_STEPS + 1)){
 
         }
     }
+
+    # Update the various vectors if babies were born
+    if(new_babies > 0){
+
+        updated_arrays = update_arrays(time, new_babies, new_babies_vect,
+                                           initial_age_vector,
+                                           raccoon_dead_alive_array,
+                                           raccoon_worm_array,
+                                           age_array)
+
+        new_babies_vect = updated_arrays$new_babies_vect
+        initial_age_vector = updated_arrays$initial_age_vector
+        age_array = updated_arrays$age_array
+        raccoon_dead_alive_array = updated_arrays$raccoon_dead_alive_array
+        raccoon_worm_array = updated_arrays$raccoon_worm_array
+
+    }
+
 }
 

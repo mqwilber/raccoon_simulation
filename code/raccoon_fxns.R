@@ -21,7 +21,8 @@ death_probability = function(load, beta, alpha){
     # TODO: IF LOAD IS 0 THROW AN ERROR
     # TODO: If beta is not a probability throw and ERROR
 
-    # CHANGE TO LOGISTIC
+
+    # TODO: CHANGE TO LOGISTIC
     prob_death = beta + load * alpha
 
     return(prob_death)
@@ -37,11 +38,75 @@ kill_my_raccoon = function(worm_load, death_prob, patho){
 
 }
 
+give_birth = function(age_now, time,
+                        month_at_repro,
+                        first_repro_age, litter_size){
+    # Decide how many babies are produced by a raccoon. Check if the month
+    # is right and if the raccoon is old enough.
+
+    repro = 0
+
+    if(time %% month_at_repro == 0){ # If the month is right
+
+        if(age_now >= first_repro_age){ # If the age is right
+
+            repro = litter_size
+
+        }
+
+    }
+
+    return(repro)
+
+}
+
 
 pick_up_eggs = function(eprob, emean, infect){
     # Function to pick up eggs. Depends on eprob (encounter_probability),
     # emean (mean number of eggs contacted), infect (infectivity)
 
     return(round(eprob * rpois(1, emean) * infect))
+
+}
+
+update_arrays = function(time, new_babies, new_babies_vect,
+                                           initial_age_vector,
+                                           raccoon_dead_alive_array,
+                                           raccoon_worm_array,
+                                           age_array){
+
+    # Function takes in the various arrays used in the raccoon simulation
+    # and updates them based on the new babies that were born
+    #
+    # Returns
+    # -------
+    # : a list with all of the updated arrays
+
+    new_babies_vect[time] = new_babies
+
+    ## Extend the arrays to account for births ##
+    initial_age_vector = c(initial_age_vector, rep(0, new_babies))
+
+    new_alive_babies = array(NA, dim=c(TIME_STEPS + 1, new_babies))
+    new_worm_babies = array(NA, dim=c(TIME_STEPS + 1, new_babies))
+    new_age_babies = array(NA, dim=c(TIME_STEPS + 1, new_babies))
+
+    # # Set the baby arrays
+    new_alive_babies[time, ] = 1 # All new babies are alive
+    new_worm_babies[time, ] = 0 # All new babies have 0 worms
+    new_age_babies[time, ] = 0 # All new babies have age 0
+
+    age_array = cbind(age_array, new_age_babies)
+
+    raccoon_dead_alive_array = cbind(raccoon_dead_alive_array,
+                                                new_alive_babies)
+
+    raccoon_worm_array = cbind(raccoon_worm_array, new_worm_babies)
+
+    return(list(new_babies_vect=new_babies_vect,
+                initial_age_vector=initial_age_vector,
+                age_array=age_array,
+                raccoon_dead_alive_array=raccoon_dead_alive_array,
+                raccoon_worm_array=raccoon_worm_array))
 
 }
