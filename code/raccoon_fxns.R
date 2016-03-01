@@ -2,7 +2,7 @@
 
 death_probability = function(load, beta, alpha){
     # Calculate death probability given some worm load
-    # PIHM
+    # PIHM.  This is calculated as 1 - survival probability
 
     # Parameters
     # -----------
@@ -11,28 +11,29 @@ death_probability = function(load, beta, alpha){
     # alpha : float
     #     Pathogenicity
     # beta : float
-    #   Death probability in absence of parasites. Between 0 and 1
+    #   "Threshold" above which mortality is likely. Depends on alpha
     #
     # Returns
     # -------
     # : float
     #    Probability of death
 
-    # TODO: IF LOAD IS 0 THROW AN ERROR
-    # TODO: If beta is not a probability throw and ERROR
+    # TODO: IF LOAD IS 0 THROW AN ERROR.
 
 
-    # TODO: CHANGE TO LOGISTIC
-    prob_death = beta + load * alpha
+    prob_death = 1 - exp(beta + log(load + 1)*alpha) / (1 + exp(beta + log(load + 1)*alpha))
+
+    #prob_death = beta + load * alpha
 
     return(prob_death)
+    #return(0)
 }
 
-kill_my_raccoon = function(worm_load, death_prob, patho){
+kill_my_raccoon = function(worm_load, death_thresh, patho){
     # Kill raccoon based on worm load and intrinsic mortality
 
     tr = runif(1)
-    alive_now = tr > death_probability(worm_load, death_prob, patho)
+    alive_now = tr > death_probability(worm_load, death_thresh, patho)
 
     return(alive_now)
 
@@ -61,11 +62,12 @@ give_birth = function(age_now, time,
 }
 
 
-pick_up_eggs = function(eprob, emean, infect){
+pick_up_eggs = function(eprob, emean, infect, resist, load){
     # Function to pick up eggs. Depends on eprob (encounter_probability),
     # emean (mean number of eggs contacted), infect (infectivity)
 
-    return(round(eprob * rpois(1, emean) * infect))
+    infect_red = infect * exp(-resist * load)
+    return(round(eprob * rpois(1, emean) * infect_red))
 
 }
 

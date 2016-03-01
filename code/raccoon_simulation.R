@@ -35,8 +35,9 @@ for(time in 2:(TIME_STEPS + 1)){
         if(alive_then == 1){
 
             # 1. Raccoon dies (Killing at the end of the time interval)
+
             alive_now = kill_my_raccoon(raccoon_worm_array[time - 1, rac],
-                                                    DEATH_PROB, PATHOGENICITY)
+                                            DEATH_THRESHOLD, PATHOGENICITY)
             raccoon_dead_alive_array[time, rac] = alive_now
 
 
@@ -55,7 +56,10 @@ for(time in 2:(TIME_STEPS + 1)){
                 # 2. Deposit Eggs (ignoring for now)
 
                 # 3. Pick eggs
-                worms_acquired = pick_up_eggs(ENCOUNTER_PROB, ENCOUNTER_MEAN, INFECTIVITY)
+                worms_acquired = pick_up_eggs(ENCOUNTER_PROB, ENCOUNTER_MEAN,
+                                              INFECTIVITY, RESISTANCE,
+                                             raccoon_worm_array[time - 1, rac])
+
                 raccoon_worm_array[time, rac] = raccoon_worm_array[time - 1, rac] + worms_acquired
 
             } else { # Raccoon dead and its worms die
