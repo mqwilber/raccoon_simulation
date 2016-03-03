@@ -66,7 +66,9 @@ pick_up_eggs = function(eprob, emean, infect, resist, load){
     # Function to pick up eggs. Depends on eprob (encounter_probability),
     # emean (mean number of eggs contacted), infect (infectivity)
 
+    # Exponential decline of infectivity.
     infect_red = infect * exp(-resist * load)
+
     return(round(eprob * rpois(1, emean) * infect_red))
 
 }

@@ -14,8 +14,11 @@
 
 ## TODO:
 ## 1. Worm death in host
-## 2. Raccoon birth and age structure (Sort of, but no age-specific vital rates)
-## 3. Infectivity with age / Update survival function
+## 2. Carrying capacity on raccoon population
+## 3. Add in new raccoons onto the infra_worm_array
+## 4. Put this on github.
+## 5. Can we clean up the infra_worm_array to 1) drop raccoons that are dead
+## 2) collapse the list in some way?
 
 source("raccoon_fxns.R") # Load in the helper functions
 source("raccoon_parameters.R") # Load in the parameters
@@ -55,12 +58,25 @@ for(time in 2:(TIME_STEPS + 1)){
 
                 # 2. Deposit Eggs (ignoring for now)
 
-                # 3. Pick eggs
+                # 3. Kill old worms.
+                # TODO: Clean this!
+                previous_cohorts = infra_worm_array[[rac]][time - 1, 1:(time - 1)]
+
+                # Binomial deaths of all the worms...need to make this
+                # more age-dependent
+                new_cohort = rbinom(length(previous_cohorts), previous_cohorts,
+                                                 WORM_SURV_PROB)
+
+                # Assign previous cohort to current cohort
+                infra_worm_array[[rac]][time, 1:(time - 1)] = new_cohort
+
+                # 4. Pick eggs
                 worms_acquired = pick_up_eggs(ENCOUNTER_PROB, ENCOUNTER_MEAN,
                                               INFECTIVITY, RESISTANCE,
                                              raccoon_worm_array[time - 1, rac])
 
-                raccoon_worm_array[time, rac] = raccoon_worm_array[time - 1, rac] + worms_acquired
+                infra_worm_array[[rac]][time, time] = worms_acquired
+                raccoon_worm_array[time, rac] = sum(infra_worm_array[[rac]][time, ], na.rm=T)#raccoon_worm_array[time - 1, rac] + worms_acquired
 
             } else { # Raccoon dead and its worms die
                 raccoon_worm_array[time, rac] = NA
