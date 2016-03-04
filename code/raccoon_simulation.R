@@ -59,14 +59,10 @@ for(time in 2:(TIME_STEPS + 1)){
                 # 2. Deposit Eggs (ignoring for now)
 
                 # 3. Kill old worms.
-                # TODO: Clean this!
                 previous_cohorts = infra_worm_array[[rac]][time - 1, 1:(time - 1)]
-
-                # Binomial deaths of all the worms...need to make this
-                # more age-dependent
-                new_cohort = rbinom(length(previous_cohorts), previous_cohorts,
-                                                 WORM_SURV_PROB)
-
+                new_cohort = kill_raccoon_worms(previous_cohorts,
+                                                WORM_SURV_TRESH,
+                                                WORM_SURV_SLOPE)
                 # Assign previous cohort to current cohort
                 infra_worm_array[[rac]][time, 1:(time - 1)] = new_cohort
 

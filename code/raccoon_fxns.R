@@ -39,6 +39,18 @@ kill_my_raccoon = function(worm_load, death_thresh, patho){
 
 }
 
+kill_raccoon_worms = function(previous_chorts, death_thresh, death_slope){
+    # Function to kill worms in raccoon based on worm age
+    # Assuming a logistic function of survival prob of worms with cohort
+    # age and then killing the worms based on a draw from a binomial
+
+    ages = length(previous_cohorts):1
+    surv_probs = 1 / (1 + exp(-1*(death_thresh + death_slope * ages)))
+    new_cohort = rbinom(length(previous_cohorts), previous_cohorts,
+                                                 surv_probs)
+
+}
+
 give_birth = function(age_now, time,
                         month_at_repro,
                         first_repro_age, litter_size){
