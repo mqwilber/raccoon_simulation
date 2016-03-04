@@ -18,7 +18,6 @@ ENCOUNTER_PROB = 1 # 100% probability that
 ENCOUNTER_MEAN = 100 # Probability of a raccoon and egg coming into contact
 INFECTIVITY = 0.1 # Probability of infectivity
 RESISTANCE = 0.01 # How quickly a raccoon gains resistance based on previous load
-EGG_LOSS_PROB =  .14 # Probability that an egg survives of 7 months
 
 WORM_SURV_TRESH = 7 # Threshold parameter of worm survival probability
 WORM_SURV_SLOPE = -1 # Slope of worm surv probability

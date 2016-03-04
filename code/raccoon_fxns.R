@@ -81,7 +81,9 @@ pick_up_eggs = function(eprob, emean, infect, resist, load){
     # Exponential decline of infectivity.
     infect_red = infect * exp(-resist * load)
 
-    return(round(eprob * rpois(1, emean) * infect_red))
+    # Encounter and get eggs on face and get infected with eggs
+    new_eggs = rbinom(1, 1, eprob) * rbinom(1, rpois(1, emean), infect_red)
+    return(new_eggs)
 
 }
 
