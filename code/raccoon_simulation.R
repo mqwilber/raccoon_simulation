@@ -13,12 +13,12 @@
 
 
 ## TODO:
-## 1. Worm death in host
-## 2. Carrying capacity on raccoon population
-## 3. Add in new raccoons onto the infra_worm_array
-## 4. Put this on github.
-## 5. Can we clean up the infra_worm_array to 1) drop raccoons that are dead
-## 2) collapse the list in some way?
+## 2. Carrying capacity on raccoon population. Looking at literature
+## - Thought are to kill babies based on density
+## 3. Look at actual population data to get parameter values and functional
+## forms.
+## 4. Document to discuss what we are doing with each function and why we made
+## each decision.
 
 source("raccoon_fxns.R") # Load in the helper functions
 source("raccoon_parameters.R") # Load in the parameters
@@ -39,8 +39,15 @@ for(time in 2:(TIME_STEPS + 1)){
 
             # 1. Raccoon dies (Killing at the end of the time interval)
 
+            age_now = initial_age_vector[rac] +
+                        sum(raccoon_dead_alive_array[, rac], na.rm=T)
+
             alive_now = kill_my_raccoon(raccoon_worm_array[time - 1, rac],
-                                            DEATH_THRESHOLD, PATHOGENICITY)
+                                            age_now,
+                                            DEATH_THRESHOLD, PATHOGENICITY,
+                                            BABY_DEATH,
+                                            INTRINSIC_DEATH_RATE,
+                                            RANDOM_DEATH_PROB)
             raccoon_dead_alive_array[time, rac] = alive_now
 
 
@@ -48,8 +55,7 @@ for(time in 2:(TIME_STEPS + 1)){
 
                 # 1. Give birth if appropriate
                 # Calculate age. Minus 1 to account for alive dead decision
-                age_now = initial_age_vector[rac] +
-                        sum(raccoon_dead_alive_array[, rac], na.rm=T) - 1
+
                 age_array[time, rac] = age_now
                 new_babies = new_babies + give_birth(age_now, time,
                                                         MONTH_AT_REPRO,
@@ -94,13 +100,15 @@ for(time in 2:(TIME_STEPS + 1)){
                                            initial_age_vector,
                                            raccoon_dead_alive_array,
                                            raccoon_worm_array,
-                                           age_array)
+                                           age_array, infra_worm_array,
+                                           TIME_STEPS)
 
         new_babies_vect = updated_arrays$new_babies_vect
         initial_age_vector = updated_arrays$initial_age_vector
         age_array = updated_arrays$age_array
         raccoon_dead_alive_array = updated_arrays$raccoon_dead_alive_array
         raccoon_worm_array = updated_arrays$raccoon_worm_array
+        infra_worm_array = updated_arrays$infra_worm_array
 
     }
 

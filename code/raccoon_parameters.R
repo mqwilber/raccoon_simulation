@@ -5,11 +5,14 @@ INIT_NUM_RACCOONS = 5
 #DEATH_PROB = 22 # Natural death
 DEATH_THRESHOLD = 22 #22 # beta in death_probability fxn
 PATHOGENICITY = -4.2 # alpha in death_probability fxn
+BABY_DEATH = 0.5 # Probability of dying as baby
+INTRINSIC_DEATH_RATE = 0.25 # Age related death rate
+RANDOM_DEATH_PROB = 0.01 # Lower bound to death prob
 
 ## Age parameters
-FIRST_REPRO_AGE = 3 # months
+FIRST_REPRO_AGE = 10 # months
 LITTER_SIZE = 2 # Number of raccoons per litter
-MONTH_AT_REPRO = 12 # Reproduce once a year
+MONTH_AT_REPRO = 12
 
 # PARASITE PARAMETERS
 ENVIRONMENTAL_POOL = 0
@@ -24,4 +27,4 @@ WORM_SURV_SLOPE = -1 # Slope of worm surv probability
 # WORM_SURV_TRESH / WORM_SURV_SLOPE = 7 -> 0.5 prob of dying after 7 months
 
 # Time parameters: Each time step is a month
-TIME_STEPS = 10
+TIME_STEPS = 100

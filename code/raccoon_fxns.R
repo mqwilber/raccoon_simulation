@@ -29,11 +29,24 @@ death_probability = function(load, beta, alpha){
     #return(0)
 }
 
-kill_my_raccoon = function(worm_load, death_thresh, patho){
+intrinsic_death_fxn = function(age, intrinsic_death_rate, baby_death){
+
+    # TODO: UPDATE THE AGE_DEPENDENT SURVIVAL FUNCTION
+    return(baby_death * exp(-intrinsic_death_rate * age))
+}
+
+kill_my_raccoon = function(worm_load, age, death_thresh, patho, intrinsic_death,
+                                baby_death, random_death_prob){
     # Kill raccoon based on worm load and intrinsic mortality
 
     tr = runif(1)
-    alive_now = tr > death_probability(worm_load, death_thresh, patho)
+
+    # Probaility of not dying from worms * not dying from age * not dying
+    # from random
+    surv_prob = (1 - death_probability(worm_load, death_thresh, patho)) *
+                        (1 - intrinsic_death_fxn(age, intrinsic_death,
+                            baby_death)) * (1 - random_death_prob)
+    alive_now = tr > (1 - surv_prob)
 
     return(alive_now)
 
@@ -44,10 +57,16 @@ kill_raccoon_worms = function(previous_chorts, death_thresh, death_slope){
     # Assuming a logistic function of survival prob of worms with cohort
     # age and then killing the worms based on a draw from a binomial
 
+    updated_cohort = previous_cohorts
+    non_na_ind = !is.na(previous_cohorts) # get non-nas
+
     ages = length(previous_cohorts):1
     surv_probs = 1 / (1 + exp(-1*(death_thresh + death_slope * ages)))
-    new_cohort = rbinom(length(previous_cohorts), previous_cohorts,
-                                                 surv_probs)
+
+    new_cohort = rbinom(sum(non_na_ind), previous_cohorts[non_na_ind],
+                                                 surv_probs[non_na_ind])
+    updated_cohort[non_na_ind] = new_cohort
+    return(updated_cohort)
 
 }
 
@@ -91,7 +110,8 @@ update_arrays = function(time, new_babies, new_babies_vect,
                                            initial_age_vector,
                                            raccoon_dead_alive_array,
                                            raccoon_worm_array,
-                                           age_array){
+                                           age_array, infra_worm_array,
+                                           time_steps){
 
     # Function takes in the various arrays used in the raccoon simulation
     # and updates them based on the new babies that were born
@@ -105,9 +125,9 @@ update_arrays = function(time, new_babies, new_babies_vect,
     ## Extend the arrays to account for births ##
     initial_age_vector = c(initial_age_vector, rep(0, new_babies))
 
-    new_alive_babies = array(NA, dim=c(TIME_STEPS + 1, new_babies))
-    new_worm_babies = array(NA, dim=c(TIME_STEPS + 1, new_babies))
-    new_age_babies = array(NA, dim=c(TIME_STEPS + 1, new_babies))
+    new_alive_babies = array(NA, dim=c(time_steps + 1, new_babies))
+    new_worm_babies = array(NA, dim=c(time_steps + 1, new_babies))
+    new_age_babies = array(NA, dim=c(time_steps + 1, new_babies))
 
     # # Set the baby arrays
     new_alive_babies[time, ] = 1 # All new babies are alive
@@ -121,10 +141,21 @@ update_arrays = function(time, new_babies, new_babies_vect,
 
     raccoon_worm_array = cbind(raccoon_worm_array, new_worm_babies)
 
+    # Extend the worm_infra_array
+    current_racs = length(infra_worm_array)
+    for(k in 1:new_babies){
+        infra_worm_array[[k + current_racs]] =
+                            array(NA, dim=c(time_steps + 1, time_steps + 1))
+
+        # Assign 0 worms to new racs
+        infra_worm_array[[k + current_racs]][time, time] = 0
+    }
+
     return(list(new_babies_vect=new_babies_vect,
                 initial_age_vector=initial_age_vector,
                 age_array=age_array,
                 raccoon_dead_alive_array=raccoon_dead_alive_array,
-                raccoon_worm_array=raccoon_worm_array))
+                raccoon_worm_array=raccoon_worm_array,
+                infra_worm_array=infra_worm_array))
 
 }
