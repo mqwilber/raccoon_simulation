@@ -70,11 +70,11 @@ kill_raccoon_worms = function(previous_chorts, death_thresh, death_slope){
 
 }
 
-give_birth = function(age_now, time,
+give_birth = function(age_now, time, tot_racs,
                         month_at_repro,
-                        first_repro_age, litter_size){
+                        first_repro_age, litter_size, beta){
     # Decide how many babies are produced by a raccoon. Check if the month
-    # is right and if the raccoon is old enough.
+    # is right and if the raccoon is old enough. Then chose the
 
     repro = 0
 
@@ -82,8 +82,8 @@ give_birth = function(age_now, time,
 
         if(age_now >= first_repro_age){ # If the age is right
 
-            repro = litter_size
-
+            repro_prob = exp(-(beta*tot_racs)) # Think about this beta function
+            repro = rbinom(1, litter_size, repro_prob)
         }
 
     }

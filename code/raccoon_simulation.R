@@ -13,12 +13,18 @@
 
 
 ## TODO:
-## 2. Carrying capacity on raccoon population. Looking at literature
-## - Thought are to kill babies based on density
 ## 3. Look at actual population data to get parameter values and functional
-## forms.
-## 4. Document to discuss what we are doing with each function and why we made
-## each decision.
+## forms. [Started doing that]
+## 5. Age-dependent reproduction?
+## 6. TODO: Make sure raccoons don't live past 25 (or super old) Majority
+## should be below 10 or below 5.  Very rarely above 10, majority under 6.
+## 7. Add a human contact vector for each raccoon. Draw each contact
+## probability from some beta distribution. Allow death probability to depend
+## on the the probability of contacting a human.  This is something that we
+## will need to do some sensitivity analysis.
+## 8. Run through worm parameters like we did the raccoon parameters.
+## 9. Change distribution from encounters to negative binomial k = 1? A robust
+## aggregated distribution.
 
 source("raccoon_fxns.R") # Load in the helper functions
 source("raccoon_parameters.R") # Load in the parameters
@@ -37,7 +43,7 @@ for(time in 2:(TIME_STEPS + 1)){
 
         if(alive_then == 1){
 
-            # 1. Raccoon dies (Killing at the end of the time interval)
+            # 1. Raccoon dies (Killing at the beginning of the time interval)
 
             age_now = initial_age_vector[rac] +
                         sum(raccoon_dead_alive_array[, rac], na.rm=T)
@@ -57,10 +63,12 @@ for(time in 2:(TIME_STEPS + 1)){
                 # Calculate age. Minus 1 to account for alive dead decision
 
                 age_array[time, rac] = age_now
-                new_babies = new_babies + give_birth(age_now, time,
+
+                tot_racs = sum(raccoon_dead_alive_array[time, ], na.rm=T)
+                new_babies = new_babies + give_birth(age_now, time, tot_racs,
                                                         MONTH_AT_REPRO,
                                                         FIRST_REPRO_AGE,
-                                                        LITTER_SIZE)
+                                                        LITTER_SIZE, BETA)
 
                 # 2. Deposit Eggs (ignoring for now)
 
@@ -96,7 +104,7 @@ for(time in 2:(TIME_STEPS + 1)){
     # Update the various vectors if babies were born
     if(new_babies > 0){
 
-        updated_arrays = update_arrays(time, new_babies, new_babies_vect,
+        updated_arrays = update_arrays(time, new_alive_babies, new_babies_vect,
                                            initial_age_vector,
                                            raccoon_dead_alive_array,
                                            raccoon_worm_array,
