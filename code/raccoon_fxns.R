@@ -93,7 +93,7 @@ give_birth = function(age_now, time, tot_racs,
 }
 
 
-pick_up_eggs = function(eprob, emean, infect, resist, load){
+pick_up_eggs = function(eprob, emean, ek, infect, resist, load){
     # Function to pick up eggs. Depends on eprob (encounter_probability),
     # emean (mean number of eggs contacted), infect (infectivity)
 
@@ -101,9 +101,15 @@ pick_up_eggs = function(eprob, emean, infect, resist, load){
     infect_red = infect * exp(-resist * load)
 
     # Encounter and get eggs on face and get infected with eggs
-    new_eggs = rbinom(1, 1, eprob) * rbinom(1, rpois(1, emean), infect_red)
+    new_eggs = rbinom(1, 1, eprob) * rbinom(1, rnbinom(1, size=ek, mu=emean), infect_red)
     return(new_eggs)
 
+}
+
+
+assign_human_contacts = function(num_racs){
+    # Assign probabilities of human contacts
+    return(runif(num_racs))
 }
 
 update_arrays = function(time, new_babies, new_babies_vect,
@@ -111,6 +117,7 @@ update_arrays = function(time, new_babies, new_babies_vect,
                                            raccoon_dead_alive_array,
                                            raccoon_worm_array,
                                            age_array, infra_worm_array,
+                                           human_array,
                                            time_steps){
 
     # Function takes in the various arrays used in the raccoon simulation
@@ -136,6 +143,9 @@ update_arrays = function(time, new_babies, new_babies_vect,
 
     age_array = cbind(age_array, new_age_babies)
 
+    # Add new babies behaviors onto human array
+    human_array = c(human_array, assign_human_contacts(new_babies))
+
     raccoon_dead_alive_array = cbind(raccoon_dead_alive_array,
                                                 new_alive_babies)
 
@@ -156,6 +166,8 @@ update_arrays = function(time, new_babies, new_babies_vect,
                 age_array=age_array,
                 raccoon_dead_alive_array=raccoon_dead_alive_array,
                 raccoon_worm_array=raccoon_worm_array,
-                infra_worm_array=infra_worm_array))
+                infra_worm_array=infra_worm_array,
+                human_array=human_array))
 
 }
+

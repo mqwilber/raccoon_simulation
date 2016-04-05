@@ -29,12 +29,13 @@ BETA = BIRTH_RATE / K_CAPACITY
 # EGG_PRODUCTION_PER_WORM = 100 # eggs per month (note this is very wrong)
 ENCOUNTER_PROB = 1 # 100% probability that
 ENCOUNTER_MEAN = 100 # Probability of a raccoon and egg coming into contact
-INFECTIVITY = 0.1 # Probability of infectivity
+ENCOUNTER_K = 1 # Aggregation parameter of the NBD
+INFECTIVITY = 0.02 # Probability of infectivity
 RESISTANCE = 0.1 # How quickly a raccoon gains resistance based on previous load
 
-WORM_SURV_TRESH = 7 # Threshold parameter of worm survival probability
-WORM_SURV_SLOPE = -1 # Slope of worm surv probability
-# WORM_SURV_TRESH / WORM_SURV_SLOPE = 7 -> 0.5 prob of dying after 7 months
+# See fit_param.R for how we got these values
+WORM_SURV_TRESH = 4.7104 # Threshold parameter of worm survival probability
+WORM_SURV_SLOPE = -0.9446 # Slope of worm surv probability
 
 # Time parameters: Each time step is a month
 TIME_STEPS = 30

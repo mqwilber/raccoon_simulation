@@ -11,21 +11,6 @@
 ##
 ##
 
-
-## TODO:
-## 3. Look at actual population data to get parameter values and functional
-## forms. [Started doing that]
-## 5. Age-dependent reproduction?
-## 6. TODO: Make sure raccoons don't live past 25 (or super old) Majority
-## should be below 10 or below 5.  Very rarely above 10, majority under 6.
-## 7. Add a human contact vector for each raccoon. Draw each contact
-## probability from some beta distribution. Allow death probability to depend
-## on the the probability of contacting a human.  This is something that we
-## will need to do some sensitivity analysis.
-## 8. Run through worm parameters like we did the raccoon parameters.
-## 9. Change distribution from encounters to negative binomial k = 1? A robust
-## aggregated distribution.
-
 source("raccoon_fxns.R") # Load in the helper functions
 source("raccoon_parameters.R") # Load in the parameters
 source("raccoon_init_arrays.R") # Load in the initial arrays
@@ -82,6 +67,7 @@ for(time in 2:(TIME_STEPS + 1)){
 
                 # 4. Pick eggs
                 worms_acquired = pick_up_eggs(ENCOUNTER_PROB, ENCOUNTER_MEAN,
+                                              ENCOUNTER_K,
                                               INFECTIVITY, RESISTANCE,
                                              raccoon_worm_array[time - 1, rac])
 
@@ -104,11 +90,12 @@ for(time in 2:(TIME_STEPS + 1)){
     # Update the various vectors if babies were born
     if(new_babies > 0){
 
-        updated_arrays = update_arrays(time, new_alive_babies, new_babies_vect,
+        updated_arrays = update_arrays(time, new_babies, new_babies_vect,
                                            initial_age_vector,
                                            raccoon_dead_alive_array,
                                            raccoon_worm_array,
                                            age_array, infra_worm_array,
+                                           human_array,
                                            TIME_STEPS)
 
         new_babies_vect = updated_arrays$new_babies_vect
@@ -117,6 +104,7 @@ for(time in 2:(TIME_STEPS + 1)){
         raccoon_dead_alive_array = updated_arrays$raccoon_dead_alive_array
         raccoon_worm_array = updated_arrays$raccoon_worm_array
         infra_worm_array = updated_arrays$infra_worm_array
+        human_array = updated_arrays$human_array
 
     }
 
