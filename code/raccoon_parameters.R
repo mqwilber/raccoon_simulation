@@ -16,7 +16,7 @@ LITTER_SIZE = 2 # Maximum litter size
 MONTH_AT_REPRO = 12
 
 ## Ricker function for density-dependent recruitment of new babies
-K_CAPACITY = 10 # "Carrying" capacity for raccoons. Need to figure out what
+K_CAPACITY = 3 # "Carrying" capacity for raccoons. Need to figure out what
                 # what is determining carrying capacity for the deterministic
                 # version of this model
 DI_NEW_BABY_DEATH_RATE = 0 # Density independent new baby death
@@ -38,4 +38,4 @@ WORM_SURV_TRESH = 4.7104 # Threshold parameter of worm survival probability
 WORM_SURV_SLOPE = -0.9446 # Slope of worm surv probability
 
 # Time parameters: Each time step is a month
-TIME_STEPS = 30
+TIME_STEPS = 20

@@ -1,5 +1,9 @@
 ## Functions for Raccoon Simulation
 
+library(ggplot2)
+library(reshape2)
+library(data.table)
+
 death_probability = function(load, beta, alpha){
     # Calculate death probability given some worm load
     # PIHM.  This is calculated as 1 - survival probability
@@ -171,3 +175,65 @@ update_arrays = function(time, new_babies, new_babies_vect,
 
 }
 
+
+## Functions to summarize simulation output ##
+
+plot_pop_traj = function(raccoon_dead_alive_array){
+    # plot population trajectories
+    pop_trun = rowSums(raccoon_dead_alive_array, na.rm=T)
+    dat = data.frame(list(population=pop_trun, time=1:length(pop_trun)))
+    ggplot(dat, aes(x=time, y=population)) + geom_point() + geom_line() +
+        ylim(c(0, max(dat$population)))
+}
+
+plot_age_hist = function(age_array, range){
+
+    # Plot the raccoon age distribution at any time point with violin plots
+
+    # age_array: age array from simulation
+    # range: indices of the time points at which to make histograms of age
+    # distributions. i.e. 30:45
+
+    trun_age = data.frame(t(age_array[range, ]))
+    names(trun_age) = range
+    stacked_data = stack(trun_age)
+    stacked_data_trun = stacked_data[!is.na(stacked_data$values), ]
+    ggplot(stacked_data_trun, aes(as.factor(ind), values)) + geom_violin()
+
+}
+
+plot_worm_dist = function(raccoon_worm_array, range){
+
+    # Plot the raccoon age distribution at any time point with violin plots
+
+    # raccoon_worm_array: age array from simulation
+    # range: indices of the time points at which to make histograms of age
+    # distributions. i.e. 30:45
+
+    trun_age = data.frame(t(raccoon_worm_array[range, ]))
+    names(trun_age) = range
+    stacked_data = stack(trun_age)
+    stacked_data_trun = stacked_data[!is.na(stacked_data$values), ]
+    ggplot(stacked_data_trun, aes(as.factor(ind), values)) + geom_boxplot()
+
+}
+
+age_intensity_full = function(raccoon_worm_array, age_array, range){
+    # Plot full age intensity profile
+    # range specifies which time range to calculate the age-intensity for
+
+    flat_age = as.vector(age_array[range, ])
+    flat_worms = as.vector(raccoon_worm_array[range, ])
+    full_dat = as.data.table(data.frame(list(age=flat_age, worms=flat_worms)))
+    means = full_dat[, list(mean_worms=mean(worms, na.rm=T)), by="age"]
+    means = means[!is.na(means$age), ]
+    ggplot(means, aes(x=age, y=mean_worms)) + geom_point() + geom_line()
+}
+
+worm_traj = function(raccoon_worm_array){
+    # Plot trajectories of individual raccoons
+
+    sdata = stack(data.frame(raccoon_worm_array))
+    sdata$time = rep(1:dim(raccoon_worm_array)[1], dim(raccoon_worm_array)[2])
+    ggplot(sdata, aes(x=time, y=values, color=ind)) + geom_line() + geom_point()
+}
