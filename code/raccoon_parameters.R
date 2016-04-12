@@ -1,7 +1,7 @@
 ## Parameters for raccoon simulation ##
 
 ## Raccoon parameters
-INIT_NUM_RACCOONS = 30
+INIT_NUM_RACCOONS = 7
 #DEATH_PROB = 22 # Natural death
 DEATH_THRESHOLD = 22 #22 # beta in death_probability fxn
 PATHOGENICITY = -4.2 # alpha in death_probability fxn
@@ -14,6 +14,7 @@ RANDOM_DEATH_PROB = 0.01 # Lower bound to death prob
 FIRST_REPRO_AGE = 10 # months
 LITTER_SIZE = 2 # Maximum litter size
 MONTH_AT_REPRO = 12
+DISPERSAL_AGE = 6 # months
 
 ## Ricker function for density-dependent recruitment of new babies
 K_CAPACITY = 3 # "Carrying" capacity for raccoons. Need to figure out what
@@ -38,4 +39,4 @@ WORM_SURV_TRESH = 4.7104 # Threshold parameter of worm survival probability
 WORM_SURV_SLOPE = -0.9446 # Slope of worm surv probability
 
 # Time parameters: Each time step is a month
-TIME_STEPS = 20
+TIME_STEPS = 23

@@ -122,6 +122,7 @@ update_arrays = function(time, new_babies, new_babies_vect,
                                            raccoon_worm_array,
                                            age_array, infra_worm_array,
                                            human_array,
+                                           babies_at_this_time_vect,
                                            time_steps){
 
     # Function takes in the various arrays used in the raccoon simulation
@@ -147,8 +148,11 @@ update_arrays = function(time, new_babies, new_babies_vect,
 
     age_array = cbind(age_array, new_age_babies)
 
-    # Add new babies behaviors onto human array
-    human_array = c(human_array, assign_human_contacts(new_babies))
+    # Add new babies behaviors onto human array. Only for the mothers that
+    # are alive (i.e. not NAs)
+    ind = !is.na(babies_at_this_time_vect)
+    human_array = c(human_array, rep(human_array[ind],
+                                    babies_at_this_time_vect[ind]))
 
     raccoon_dead_alive_array = cbind(raccoon_dead_alive_array,
                                                 new_alive_babies)

@@ -19,12 +19,12 @@ source("raccoon_init_arrays.R") # Load in the initial arrays
 for(time in 2:(TIME_STEPS + 1)){
 
     new_babies = 0
+    babies_at_this_time_vect = array(NA, dim=dim(raccoon_worm_array)[2])
 
     # Loop through raccoons
     for(rac in 1:dim(raccoon_worm_array)[2]){
 
         alive_then = raccoon_dead_alive_array[time - 1, rac]
-
 
         if(alive_then == 1){
 
@@ -50,10 +50,14 @@ for(time in 2:(TIME_STEPS + 1)){
                 age_array[time, rac] = age_now
 
                 tot_racs = sum(raccoon_dead_alive_array[time, ], na.rm=T)
-                new_babies = new_babies + give_birth(age_now, time, tot_racs,
+                new_babies_now = give_birth(age_now, time, tot_racs,
                                                         MONTH_AT_REPRO,
                                                         FIRST_REPRO_AGE,
                                                         LITTER_SIZE, BETA)
+
+                # Add to new babies to array to assign human contacts later
+                babies_at_this_time_vect[rac] = new_babies_now
+                new_babies = new_babies + new_babies_now
 
                 # 2. Deposit Eggs (ignoring for now)
 
@@ -74,8 +78,14 @@ for(time in 2:(TIME_STEPS + 1)){
                 infra_worm_array[[rac]][time, time] = worms_acquired
                 raccoon_worm_array[time, rac] = sum(infra_worm_array[[rac]][time, ], na.rm=T)#raccoon_worm_array[time - 1, rac] + worms_acquired
 
+                # 5. Disperse if raccoon is 6
+                if(age_now == DISPERSAL_AGE){
+                    human_array[rac] = assign_human_contacts(1)
+                }
+
             } else { # Raccoon dead and its worms die
                 raccoon_worm_array[time, rac] = NA
+                human_array[rac] = NA
             }
 
 
@@ -96,6 +106,7 @@ for(time in 2:(TIME_STEPS + 1)){
                                            raccoon_worm_array,
                                            age_array, infra_worm_array,
                                            human_array,
+                                           babies_at_this_time_vect,
                                            TIME_STEPS)
 
         new_babies_vect = updated_arrays$new_babies_vect
@@ -107,6 +118,8 @@ for(time in 2:(TIME_STEPS + 1)){
         human_array = updated_arrays$human_array
 
     }
+print(paste("time:", time))
+print(human_array)
 
 }
 
