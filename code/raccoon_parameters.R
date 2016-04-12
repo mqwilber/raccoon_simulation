@@ -28,7 +28,6 @@ BETA = BIRTH_RATE / K_CAPACITY
 # PARASITE PARAMETERS
 # ENVIRONMENTAL_POOL = 0
 # EGG_PRODUCTION_PER_WORM = 100 # eggs per month (note this is very wrong)
-ENCOUNTER_PROB = 1 # 100% probability that
 ENCOUNTER_MEAN = 100 # Probability of a raccoon and egg coming into contact
 ENCOUNTER_K = 1 # Aggregation parameter of the NBD
 INFECTIVITY = 0.02 # Probability of infectivity

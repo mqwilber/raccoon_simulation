@@ -97,14 +97,20 @@ give_birth = function(age_now, time, tot_racs,
 }
 
 
-pick_up_eggs = function(eprob, emean, ek, infect, resist, load){
+pick_up_eggs = function(emean, ek, infect, resist, prev, load){
     # Function to pick up eggs. Depends on eprob (encounter_probability),
-    # emean (mean number of eggs contacted), infect (infectivity)
+    # emean (mean number of eggs contacted),
+    # ek: negative binomial k
+    # infect: infectivity
+    # resit: Acquired immunity
+    # load: worm load at time t - 1 for a given rac
+    # prev: Prevalence of worms in pop, defines the encounter probability
 
     # Exponential decline of infectivity.
     infect_red = infect * exp(-resist * load)
 
     # Encounter and get eggs on face and get infected with eggs
+    eprob = 1 # TODO change eprob to prev once we figure out prev
     new_eggs = rbinom(1, 1, eprob) * rbinom(1, rnbinom(1, size=ek, mu=emean), infect_red)
     return(new_eggs)
 
