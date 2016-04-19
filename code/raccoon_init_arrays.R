@@ -13,6 +13,11 @@ new_babies_vect[1] = 0
 
 # Initialize all arrays
 raccoon_worm_array[1, ] = 0 # Initialize all raccoons with 0 worms
+
+# Seed a raccoon with some worms
+raccoon_worm_array[1, 1] = 10 # Seeding worms
+
+
 raccoon_dead_alive_array[1, ] = 1 # All raccoons are alive
 
 # Set up worm arrays.  This array hold the cohort of worms for each raccoon

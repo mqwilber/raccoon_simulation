@@ -97,25 +97,51 @@ give_birth = function(age_now, time, tot_racs,
 }
 
 
-pick_up_eggs = function(emean, ek, infect, resist, prev, load){
+pick_up_eggs = function(emean, ek, infect, resist, prev, load, egg_decay,
+                            eprob_param){
     # Function to pick up eggs. Depends on eprob (encounter_probability),
     # emean (mean number of eggs contacted),
     # ek: negative binomial k
     # infect: infectivity
     # resit: Acquired immunity
     # load: worm load at time t - 1 for a given rac
-    # prev: Prevalence of worms in pop, defines the encounter probability
+    # prev: Prevalence of worms in pop for all past time points
+    # egg_decay: Egg decay rate
+    # eprob_param: parameter for determining encounter probability
 
     # Exponential decline of infectivity.
     infect_red = infect * exp(-resist * load)
 
     # Encounter and get eggs on face and get infected with eggs
-    eprob = 1 # TODO change eprob to prev once we figure out prev
+    eprob = get_eprob(prev, egg_decay, eprob_param)
+    print(eprob)
+    # eprob = 1
     new_eggs = rbinom(1, 1, eprob) * rbinom(1, rnbinom(1, size=ek, mu=emean), infect_red)
     return(new_eggs)
 
 }
 
+get_eprob = function(prev_vector, egg_decay, eprob_param){
+    # Calculating our encounter probability from previous prevalences
+
+    # Calculate egg decay probability
+    weights = exp(-egg_decay * 1:length(prev_vector))
+
+    adjusted_prev = weights[length(prev_vector):1] * prev_vector
+    metric = sum(adjusted_prev)
+
+    # if there is no past infection eprob = 0
+    if(metric == 0){
+        return(0)
+    } else{
+        metric = log(metric)
+        eprob = exp(eprob_param[1] + eprob_param[2] * metric) /
+                        (1 + exp(eprob_param[1] + eprob_param[2] * metric))
+        return(eprob)
+    }
+
+
+}
 
 assign_human_contacts = function(num_racs){
     # Assign probabilities of human contacts
@@ -183,6 +209,19 @@ update_arrays = function(time, new_babies, new_babies_vect,
                 infra_worm_array=infra_worm_array,
                 human_array=human_array))
 
+}
+
+## Summary functions ##
+
+get_prevalence = function(raccoon_worm_array){
+    # Get prevalence for worm array
+    # Input : the raccoon worm array
+    # Returns : prevalence for all time points
+
+    prev_fxn = function(x) {
+        return(sum(x > 0, na.rm=T) / sum(!is.na(x)))
+    }
+    return(apply(raccoon_worm_array, 1, prev_fxn))
 }
 
 

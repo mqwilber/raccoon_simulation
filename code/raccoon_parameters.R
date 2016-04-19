@@ -14,7 +14,7 @@ RANDOM_DEATH_PROB = 0.01 # Lower bound to death prob
 FIRST_REPRO_AGE = 10 # months
 LITTER_SIZE = 2 # Maximum litter size
 MONTH_AT_REPRO = 12
-DISPERSAL_AGE = 6 # months
+DISPERSAL_AGE = 12 # months
 
 ## Ricker function for density-dependent recruitment of new babies
 K_CAPACITY = 3 # "Carrying" capacity for raccoons. Need to figure out what
@@ -30,8 +30,17 @@ BETA = BIRTH_RATE / K_CAPACITY
 # EGG_PRODUCTION_PER_WORM = 100 # eggs per month (note this is very wrong)
 ENCOUNTER_MEAN = 100 # Probability of a raccoon and egg coming into contact
 ENCOUNTER_K = 1 # Aggregation parameter of the NBD
+
+# A set of parameters that determines the
+# probability of encounter given a weighted history of prevalence. The first
+# parameter dictates at what level of the log metric eprob is close to 1 and
+# the second parameter dictates how quickly eprob goes to 1.
+# TODO: WE WILL NEED TO FIDDLE WITH THESE
+ENCOUNTER_PARAMS = c(2, 5)
+
 INFECTIVITY = 0.02 # Probability of infectivity
 RESISTANCE = 0.1 # How quickly a raccoon gains resistance based on previous load
+EGG_DECAY = 0.3 # Rate of egg decay such that 3% chance of survival after year
 
 # See fit_param.R for how we got these values
 WORM_SURV_TRESH = 4.7104 # Threshold parameter of worm survival probability

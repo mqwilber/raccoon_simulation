@@ -20,8 +20,7 @@ for(time in 2:(TIME_STEPS + 1)){
 
     new_babies = 0
     babies_at_this_time_vect = array(NA, dim=dim(raccoon_worm_array)[2])
-    previous_prevalence = sum(raccoon_worm_array[time - 1, ] > 0, na.rm=T) /
-                            sum(!is.na(raccoon_worm_array[time - 1, ]))
+    previous_prevalence = get_prevalence(raccoon_worm_array)
     # Loop through raccoons
     for(rac in 1:dim(raccoon_worm_array)[2]){
 
@@ -74,8 +73,9 @@ for(time in 2:(TIME_STEPS + 1)){
                 worms_acquired = pick_up_eggs(ENCOUNTER_MEAN,
                                             ENCOUNTER_K,
                                             INFECTIVITY, RESISTANCE,
-                                            previous_prevalence,
-                                            raccoon_worm_array[time - 1, rac])
+                                            previous_prevalence[1:(time - 1)],
+                                            raccoon_worm_array[time - 1, rac],
+                                            EGG_DECAY, ENCOUNTER_PARAMS)
 
                 infra_worm_array[[rac]][time, time] = worms_acquired
                 raccoon_worm_array[time, rac] = sum(infra_worm_array[[rac]][time, ], na.rm=T)#raccoon_worm_array[time - 1, rac] + worms_acquired
