@@ -7,6 +7,9 @@ initial_age_vector = rep(1, INIT_NUM_RACCOONS)
 age_array = array(NA, dim=c(TIME_STEPS + 1, INIT_NUM_RACCOONS))
 age_array[1, ] = initial_age_vector
 human_array = assign_human_contacts(INIT_NUM_RACCOONS)
+human_risk_through_time = list()
+human_risk_through_time[[1]] = human_array
+
 
 new_babies_vect = array(NA, dim=TIME_STEPS + 1)
 new_babies_vect[1] = 0
@@ -15,8 +18,7 @@ new_babies_vect[1] = 0
 raccoon_worm_array[1, ] = 0 # Initialize all raccoons with 0 worms
 
 # Seed a raccoon with some worms
-raccoon_worm_array[1, 1] = 10 # Seeding worms
-
+raccoon_worm_array[1, ] = 10 # Seeding worms
 
 raccoon_dead_alive_array[1, ] = 1 # All raccoons are alive
 

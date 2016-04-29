@@ -21,6 +21,7 @@ for(time in 2:(TIME_STEPS + 1)){
     new_babies = 0
     babies_at_this_time_vect = array(NA, dim=dim(raccoon_worm_array)[2])
     previous_prevalence = get_prevalence(raccoon_worm_array)
+
     # Loop through raccoons
     for(rac in 1:dim(raccoon_worm_array)[2]){
 
@@ -121,5 +122,17 @@ for(time in 2:(TIME_STEPS + 1)){
 
     }
 
+    # Save the new human risk array
+    human_risk_through_time[[time]] = human_array
+
+
+    ## TESTING CODE ##
+    # if(time == 10){
+    #     ind = !is.na(raccoon_worm_array[time, ])
+    #     raccoon_worm_array[time, ind] = 0
+    # }
+
 }
+
+
 

@@ -114,7 +114,6 @@ pick_up_eggs = function(emean, ek, infect, resist, prev, load, egg_decay,
 
     # Encounter and get eggs on face and get infected with eggs
     eprob = get_eprob(prev, egg_decay, eprob_param)
-    print(eprob)
     # eprob = 1
     new_eggs = rbinom(1, 1, eprob) * rbinom(1, rnbinom(1, size=ek, mu=emean), infect_red)
     return(new_eggs)
@@ -125,15 +124,21 @@ get_eprob = function(prev_vector, egg_decay, eprob_param){
     # Calculating our encounter probability from previous prevalences
 
     # Calculate egg decay probability
+    # TODO: REVIST WEIGHTS SHOULD THIS START AT 0? (i.e. 0:(length(prev_vector) - 1))
     weights = exp(-egg_decay * 1:length(prev_vector))
 
+    # Weight the the past infections prevalences and then sum them.
+    # In general, when this metric is 1 or above we'd expect a high
+    # probability of encounter probability
     adjusted_prev = weights[length(prev_vector):1] * prev_vector
     metric = sum(adjusted_prev)
 
     # if there is no past infection eprob = 0
     if(metric == 0){
         return(0)
-    } else{
+    } else{ # The the metric is not zero, it determines infection prob
+            # according to a logistic function.
+
         metric = log(metric)
         eprob = exp(eprob_param[1] + eprob_param[2] * metric) /
                         (1 + exp(eprob_param[1] + eprob_param[2] * metric))
@@ -208,6 +213,52 @@ update_arrays = function(time, new_babies, new_babies_vect,
                 raccoon_worm_array=raccoon_worm_array,
                 infra_worm_array=infra_worm_array,
                 human_array=human_array))
+
+}
+
+get_human_risk_metric = function(human_risk_through_time,
+                                        raccoon_worm_array,
+                                        egg_decay){
+    # Calculating the human risk metric through time
+    # This is using a weighted measure of human risk based on the past
+    # worm loads in the population
+    #
+    # Parameters
+    # human_risk_through_time: list containing the vectors that have human
+    #                           risks for each raccoon
+    # raccoon_worm_array: Raccoon worm array
+    # egg_decay: parameter determining egg decay rate in the environment
+
+    # Number of raccoons at end of simulation
+    tot_rac = length(human_risk_through_time[[length(human_risk_through_time)]])
+
+    # Function to grow all arrays to same size
+    growth_array = function(x, size){
+        num_grow = size - length(x)
+        return(c(x, array(NA, dim=num_grow)))
+    }
+
+    # Matrix of humans risks
+    new_risk = lapply(human_risk_through_time, growth_array, tot_rac)
+    new_risk = do.call(rbind, new_risk)
+
+    tot_time = length(human_risk_through_time)
+
+    overlap_array = raccoon_worm_array * new_risk
+    unweighted_risk_array = rowSums(overlap_array, na.rm=T)
+
+    weighted_risk_array = array(NA, dim=length(unweighted_risk_array))
+
+    for(time in 1:tot_time){
+
+        vals = 0:(time - 1)
+        weights = exp(-egg_decay * vals)
+        weighted_hr = sum(unweighted_risk_array[1:time] * weights[time:1])
+        weighted_risk_array[time] = weighted_hr
+
+    }
+
+    return(list(weighted=weighted_risk_array, unweighted=unweighted_risk_array))
 
 }
 
