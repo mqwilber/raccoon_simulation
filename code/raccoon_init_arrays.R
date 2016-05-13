@@ -3,7 +3,7 @@
 # Set up the raccoon arrays
 raccoon_worm_array = array(NA, dim=c(TIME_STEPS + 1, INIT_NUM_RACCOONS))
 raccoon_dead_alive_array = array(NA, dim=c(TIME_STEPS + 1, INIT_NUM_RACCOONS))
-initial_age_vector = rep(1, INIT_NUM_RACCOONS)
+initial_age_vector = rep(10, INIT_NUM_RACCOONS)
 age_array = array(NA, dim=c(TIME_STEPS + 1, INIT_NUM_RACCOONS))
 age_array[1, ] = initial_age_vector
 human_array = assign_human_contacts(INIT_NUM_RACCOONS)
@@ -15,8 +15,6 @@ new_babies_vect = array(NA, dim=TIME_STEPS + 1)
 new_babies_vect[1] = 0
 
 # Initialize all arrays
-raccoon_worm_array[1, ] = 0 # Initialize all raccoons with 0 worms
-
 # Seed a raccoon with some worms
 raccoon_worm_array[1, ] = 10 # Seeding worms
 

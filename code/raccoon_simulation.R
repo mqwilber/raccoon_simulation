@@ -39,7 +39,7 @@ for(time in 2:(TIME_STEPS + 1)){
                                             DEATH_THRESHOLD, PATHOGENICITY,
                                             BABY_DEATH,
                                             INTRINSIC_DEATH_RATE,
-                                            RANDOM_DEATH_PROB)
+                                            RANDOM_DEATH_PROB, OLD_DEATH)
             raccoon_dead_alive_array[time, rac] = alive_now
 
 

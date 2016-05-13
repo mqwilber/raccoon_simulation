@@ -35,12 +35,18 @@ death_probability = function(load, beta, alpha){
 
 intrinsic_death_fxn = function(age, intrinsic_death_rate, baby_death){
 
-    # TODO: UPDATE THE AGE_DEPENDENT SURVIVAL FUNCTION
+    # TODO: REVISIT THIS.  ARE WE DOUBLE COUNTING DEATH
     return(baby_death * exp(-intrinsic_death_rate * age))
 }
 
+senescence_fxn = function(age, old_death){
+    # Probability of dying of old age
+    prob_sen = min(c(1, old_death * age^2))
+    return(prob_sen)
+} 
+
 kill_my_raccoon = function(worm_load, age, death_thresh, patho, intrinsic_death,
-                                baby_death, random_death_prob){
+                                baby_death, random_death_prob, old_death){
     # Kill raccoon based on worm load and intrinsic mortality
 
     tr = runif(1)
@@ -49,7 +55,8 @@ kill_my_raccoon = function(worm_load, age, death_thresh, patho, intrinsic_death,
     # from random
     surv_prob = (1 - death_probability(worm_load, death_thresh, patho)) *
                         (1 - intrinsic_death_fxn(age, intrinsic_death,
-                            baby_death)) * (1 - random_death_prob)
+                            baby_death)) * (1 - random_death_prob) * 
+                            (1 - senescence_fxn(age, old_death))
     alive_now = tr > (1 - surv_prob)
 
     return(alive_now)
@@ -298,7 +305,7 @@ plot_age_hist = function(age_array, range){
     names(trun_age) = range
     stacked_data = stack(trun_age)
     stacked_data_trun = stacked_data[!is.na(stacked_data$values), ]
-    ggplot(stacked_data_trun, aes(as.factor(ind), values)) + geom_violin()
+    ggplot(stacked_data_trun, aes(as.factor(ind), values)) + geom_boxplot()
 
 }
 
