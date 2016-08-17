@@ -110,7 +110,7 @@ pick_up_eggs = function(emean, ek, infect, resist, prev, load, egg_decay,
     # emean (mean number of eggs contacted),
     # ek: negative binomial k
     # infect: infectivity
-    # resit: Acquired immunity
+    # resist: Acquired immunity
     # load: worm load at time t - 1 for a given rac
     # prev: Prevalence of worms in pop for all past time points
     # egg_decay: Egg decay rate
@@ -190,7 +190,7 @@ update_arrays = function(time, new_babies, new_babies_vect,
                                            initial_age_vector,
                                            raccoon_dead_alive_array,
                                            raccoon_worm_array,
-                                           age_array, infra_worm_array,
+                                           age_array, all_worms_infra_array,
                                            human_array,
                                            babies_at_this_time_vect,
                                            time_steps){
@@ -230,13 +230,17 @@ update_arrays = function(time, new_babies, new_babies_vect,
     raccoon_worm_array = cbind(raccoon_worm_array, new_worm_babies)
 
     # Extend the worm_infra_array
-    current_racs = length(infra_worm_array)
-    for(k in 1:new_babies){
-        infra_worm_array[[k + current_racs]] =
-                            array(NA, dim=c(time_steps + 1, time_steps + 1))
 
-        # Assign 0 worms to new racs
-        infra_worm_array[[k + current_racs]][time, time] = 0
+    for(i in 1:length(all_worms_infra_array)){
+
+        current_racs = length(all_worms_infra_array[[i]])
+        for(k in 1:new_babies){
+            all_worms_infra_array[[i]][[k + current_racs]] =
+                                array(NA, dim=c(time_steps + 1, time_steps + 1))
+
+            # Assign 0 worms to new racs
+            all_worms_infra_array[[i]][[k + current_racs]][time, time] = 0
+        }
     }
 
     return(list(new_babies_vect=new_babies_vect,
@@ -244,8 +248,65 @@ update_arrays = function(time, new_babies, new_babies_vect,
                 age_array=age_array,
                 raccoon_dead_alive_array=raccoon_dead_alive_array,
                 raccoon_worm_array=raccoon_worm_array,
-                infra_worm_array=infra_worm_array,
+                all_worms_infra_array=all_worms_infra_array,
                 human_array=human_array))
+
+}
+
+
+combine_worm_arrays = function(all_worm_arrays, raccoon_dead_alive_array){
+    # Takes in multiple independent worm arrays and combines them into a 
+    # total worm array. Used for distinguishing between worms from rodents
+    # and worms from eggs.
+    #
+    # all_worm_arrays : list of different infra_worm_arrays from different
+    #                   possible sources. Could be from arbitrarily many sources
+    #
+
+    # Create matrices in lists
+    convert_lists = lapply(seq_along(all_worm_arrays), 
+                        function(x) simplify2array(all_worm_arrays[[x]]))
+
+    # 4 dimensional matrix
+    converted_matrix = simplify2array(convert_lists)
+
+    # Sum across different worm arrays
+    sum_worms = apply(converted_matrix, 1:3, sum, na.rm=TRUE)
+
+    # Convert back to lists
+    sum_worms_list = lapply(1:dim(sum_worms)[3], function(i) sum_worms[, , i])
+
+    # Replace upper diags with NAs
+    sum_worms_list = lapply(sum_worms_list, function(x){x[upper.tri(x)] = NA; return(x)})
+
+    # Replace 0s with NA if raccoon did not yet exist
+    for(j in 1:length(sum_worms_list)){
+
+        # If raccooon doesn't yet exist set to NA
+        inds = which(is.na(raccoon_dead_alive_array[, j]))
+        sum_worms_list[[j]][inds, ] = NA
+        sum_worms_list[[j]][, inds] = NA
+
+        # If raccoon is dead set to NA
+        dead = which(raccoon_dead_alive_array[, j] == 0)
+        sum_worms_list[[j]][dead, ] = NA
+
+    }
+
+    return(sum_worms_list)
+
+
+}
+
+get_tot_worm_array_from_infra = function(infra_worm_array, raccoon_dead_alive_array){
+    # Convert infra-worm array to total raccoon worm array
+
+    total_worm_array = do.call(cbind, lapply(infra_worm_array, 
+                                function(x) apply(x, 1, sum, na.rm=T)))
+    total_worm_array[raccoon_dead_alive_array == 0] = NA
+    total_worm_array[is.na(raccoon_dead_alive_array)] = NA
+
+    return(total_worm_array)
 
 }
 

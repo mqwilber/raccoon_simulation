@@ -14,6 +14,7 @@
 source("raccoon_fxns.R") # Load in the helper functions
 source("raccoon_parameters.R") # Load in the parameters
 source("raccoon_init_arrays.R") # Load in the initial arrays
+set.seed(1)
 
 # Loop through time steps
 for(time in 2:(TIME_STEPS + 1)){
@@ -58,24 +59,29 @@ for(time in 2:(TIME_STEPS + 1)){
                                                         FIRST_REPRO_AGE,
                                                         LITTER_SIZE, BETA)
 
-                # Add to new babies to array to assign human contacts later
+                # Add new babies to array to assign human contacts later
                 babies_at_this_time_vect[rac] = new_babies_now
                 new_babies = new_babies + new_babies_now
 
                 # 2. Deposit Eggs (ignoring for now)
 
-                # 3. Kill old worms.
-                previous_cohorts = infra_worm_array[[rac]][time - 1, 1:(time - 1)]
-                new_cohort = kill_raccoon_worms(previous_cohorts,
-                                                WORM_SURV_TRESH,
-                                                WORM_SURV_SLOPE)
+                # 3. Kill old worms for each possible source of worms
 
-                # Assign previous cohort to current cohort
-                infra_worm_array[[rac]][time, 1:(time - 1)] = new_cohort
+                for(tw in 1:length(all_worms_infra_array)){
 
-                # 4. Pick eggs or pick up rodents depending on age
+                    previous_cohorts = all_worms_infra_array[[tw]][[rac]][time - 1, 1:(time - 1)]
+                    new_cohort = kill_raccoon_worms(previous_cohorts,
+                                                    WORM_SURV_TRESH,
+                                                    WORM_SURV_SLOPE)
 
-                if(age_now <= AGE_EGG_RESISTANCE){
+                    # Assign previous cohort to current cohort
+                    all_worms_infra_array[[tw]][[rac]][time, 1:(time - 1)] = new_cohort
+
+                }
+
+                # 4. Pick up eggs or pick up rodents depending on age
+
+                if(age_now <= AGE_EGG_RESISTANCE){ # Only pick up worms from eggs
 
                     worms_acquired = pick_up_eggs(ENCOUNTER_MEAN,
                                             ENCOUNTER_K,
@@ -83,15 +89,26 @@ for(time in 2:(TIME_STEPS + 1)){
                                             previous_prevalence[1:(time - 1)],
                                             raccoon_worm_array[time - 1, rac],
                                             EGG_DECAY, ENCOUNTER_PARAMS)
-                } else{
+
+                    all_worms_infra_array[[1]][[rac]][time, time] = worms_acquired
+                    all_worms_infra_array[[2]][[rac]][time, time] = 0
+
+                } else{ # Only pick up worms from rodent
                     worms_acquired = pick_up_rodents(MOUSE_WORM_MEAN,
                                                      MOUSE_WORM_AGG,
                                                      RODENT_ENCOUNTER_PROB,
                                                      LARVAL_WORM_INFECTIVITY)
+
+                    all_worms_infra_array[[1]][[rac]][time, time] = 0
+                    all_worms_infra_array[[2]][[rac]][time, time] = worms_acquired
                 }
 
-                infra_worm_array[[rac]][time, time] = worms_acquired
-                raccoon_worm_array[time, rac] = sum(infra_worm_array[[rac]][time, ], na.rm=T)#raccoon_worm_array[time - 1, rac] + worms_acquired
+                # Sum over all worm sources and add to total raccoon array
+                raccoon_worm_array[time, rac] = sum(all_worms_infra_array[[1]][[rac]][time, ], na.rm=T) + 
+                                                sum(all_worms_infra_array[[2]][[rac]][time, ], na.rm=T)
+
+                # sum(unlist(lapply(all_worms_infra_array, 
+                #             function(wa) sum(wa[[rac]][time, ], na.rm=T))))
 
 
                 # 5. Disperse if raccoon is 6
@@ -120,7 +137,7 @@ for(time in 2:(TIME_STEPS + 1)){
                                            initial_age_vector,
                                            raccoon_dead_alive_array,
                                            raccoon_worm_array,
-                                           age_array, infra_worm_array,
+                                           age_array, all_worms_infra_array,
                                            human_array,
                                            babies_at_this_time_vect,
                                            TIME_STEPS)
@@ -130,7 +147,7 @@ for(time in 2:(TIME_STEPS + 1)){
         age_array = updated_arrays$age_array
         raccoon_dead_alive_array = updated_arrays$raccoon_dead_alive_array
         raccoon_worm_array = updated_arrays$raccoon_worm_array
-        infra_worm_array = updated_arrays$infra_worm_array
+        all_worms_infra_array = updated_arrays$all_worms_infra_array
         human_array = updated_arrays$human_array
 
     }

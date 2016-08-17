@@ -1,7 +1,7 @@
 ## Parameters for raccoon simulation ##
 
 ## Raccoon parameters
-INIT_NUM_RACCOONS = 100
+INIT_NUM_RACCOONS = 2000
 #DEATH_PROB = 22 # Natural death
 DEATH_THRESHOLD = 22 #22 # beta in death_probability fxn
 PATHOGENICITY = -4.2 # alpha in death_probability fxn
@@ -37,8 +37,8 @@ BETA = BIRTH_RATE / K_CAPACITY
 # PARASITE PARAMETERS
 # ENVIRONMENTAL_POOL = 0
 # EGG_PRODUCTION_PER_WORM = 100 # eggs per month (note this is very wrong)
-ENCOUNTER_MEAN = 500 # M
-ENCOUNTER_K = 0.5 # Aggregation parameter of the NBD
+ENCOUNTER_MEAN = 500 # Mean number of encountered eggs
+ENCOUNTER_K = 1 # Aggregation parameter of the NBD
 
 # A set of parameters that determines the
 # probability of encounter given a weighted history of prevalence. The first
@@ -56,4 +56,4 @@ WORM_SURV_TRESH = 4.7104 #/ 2 # Threshold parameter of worm survival probability
 WORM_SURV_SLOPE = -0.9446 #/ 2 # Slope of worm surv probability
 
 # Time parameters: Each time step is a month
-TIME_STEPS = 150
+TIME_STEPS = 100
