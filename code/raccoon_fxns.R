@@ -128,7 +128,30 @@ pick_up_eggs = function(emean, ek, infect, resist, prev, load, egg_decay,
 
 }
 
-#TODO: pick_up_rodent fxn
+pick_up_rodents = function(mouse_worm_mean, mouse_worm_agg, 
+                        rodent_encounter_prob, larval_worm_infectivity){
+    # Function to pick up rodents from rodent pool.  Rodent 
+    # encounters worm, picks up worms from a negative binomial, and 
+    # then worms establish with some prob
+    #
+    # mouse_worm_mean : mean number of larval worms acquired
+    # mouse_worm_agg : aggregation of larval worms
+    # rodent_encounter_prob : probability of raccoon encountering rodent
+    # larval_worm_infectivity : Probability of larval worm establishing
+    #
+    # Returns
+    # -------
+    # : number of larval worms acquired
+
+    larval_worms = rnbinom(1, mu=mouse_worm_mean, size=mouse_worm_agg) # Larval worms per mouse
+
+
+    new_worms = rbinom(1, 1, rodent_encounter_prob) * # Encounter with mice
+                rbinom(1, larval_worms, larval_worm_infectivity) # Worms establishing
+
+    return(new_worms)
+
+}
 
 get_eprob = function(prev_vector, egg_decay, eprob_param){
     # Calculating our encounter probability from previous prevalences

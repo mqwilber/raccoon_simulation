@@ -2,6 +2,7 @@
 
 # Set up the raccoon arrays
 raccoon_worm_array = array(NA, dim=c(TIME_STEPS + 1, INIT_NUM_RACCOONS))
+
 raccoon_dead_alive_array = array(NA, dim=c(TIME_STEPS + 1, INIT_NUM_RACCOONS))
 initial_age_vector = rep(10, INIT_NUM_RACCOONS)
 age_array = array(NA, dim=c(TIME_STEPS + 1, INIT_NUM_RACCOONS))
@@ -24,6 +25,7 @@ raccoon_dead_alive_array[1, ] = 1 # All raccoons are alive
 # so that we can track the age-dependent death of the worms in the raccoons
 infra_worm_array = lapply(1:INIT_NUM_RACCOONS,
                 function(x) array(NA, dim=c(TIME_STEPS + 1, TIME_STEPS + 1)))
+
 
 # Initialize worm arrays
 for(i in 1:length(infra_worm_array)){

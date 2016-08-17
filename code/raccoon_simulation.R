@@ -69,28 +69,30 @@ for(time in 2:(TIME_STEPS + 1)){
                 new_cohort = kill_raccoon_worms(previous_cohorts,
                                                 WORM_SURV_TRESH,
                                                 WORM_SURV_SLOPE)
+
                 # Assign previous cohort to current cohort
                 infra_worm_array[[rac]][time, 1:(time - 1)] = new_cohort
 
-                # TODO: Only pick-up eggs if less than 4 months
-                # Otherwise pick up rodent
+                # 4. Pick eggs or pick up rodents depending on age
 
-                # 4. Pick eggs
+                if(age_now <= AGE_EGG_RESISTANCE){
 
-                if(age_now <= 12){
-
-                worms_acquired = pick_up_eggs(ENCOUNTER_MEAN,
+                    worms_acquired = pick_up_eggs(ENCOUNTER_MEAN,
                                             ENCOUNTER_K,
                                             INFECTIVITY, RESISTANCE,
                                             previous_prevalence[1:(time - 1)],
                                             raccoon_worm_array[time - 1, rac],
                                             EGG_DECAY, ENCOUNTER_PARAMS)
                 } else{
-                    worms_acquired = 0
+                    worms_acquired = pick_up_rodents(MOUSE_WORM_MEAN,
+                                                     MOUSE_WORM_AGG,
+                                                     RODENT_ENCOUNTER_PROB,
+                                                     LARVAL_WORM_INFECTIVITY)
                 }
 
                 infra_worm_array[[rac]][time, time] = worms_acquired
                 raccoon_worm_array[time, rac] = sum(infra_worm_array[[rac]][time, ], na.rm=T)#raccoon_worm_array[time - 1, rac] + worms_acquired
+
 
                 # 5. Disperse if raccoon is 6
                 if(age_now == DISPERSAL_AGE){

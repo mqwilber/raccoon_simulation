@@ -9,6 +9,13 @@ BABY_DEATH = 1 - (.52^(1/7))^4 # Probability of dying as baby
 INTRINSIC_DEATH_RATE = 0.33 # Age related death rate
 RANDOM_DEATH_PROB = 0.01 # Lower bound to death prob
 OLD_DEATH = (1 / (20 * 12)^2) # Above 20 years old the raccoon dies
+AGE_EGG_RESISTANCE = 4 # Age above which raccoons no longer pick up eggs
+RODENT_ENCOUNTER_PROB = 0.5 # Monthly probability of encountering a rodent
+
+## Rodent parameters
+MOUSE_WORM_MEAN = 3.49 # Abundance of worms in peromyscus estimated from Sara's data
+MOUSE_WORM_AGG = 0.22 # Aggregation of worms (k parameter) in peromyscus
+LARVAL_WORM_INFECTIVITY = 0.25 # Probability of larval worm establishing
 
 
 ## Age parameters
@@ -49,4 +56,4 @@ WORM_SURV_TRESH = 4.7104 #/ 2 # Threshold parameter of worm survival probability
 WORM_SURV_SLOPE = -0.9446 #/ 2 # Slope of worm surv probability
 
 # Time parameters: Each time step is a month
-TIME_STEPS = 100
+TIME_STEPS = 150
