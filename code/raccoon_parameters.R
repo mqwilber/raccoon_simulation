@@ -1,7 +1,7 @@
 ## Parameters for raccoon simulation ##
 
 ## Raccoon parameters
-INIT_NUM_RACCOONS = 2000
+INIT_NUM_RACCOONS = 100
 #DEATH_PROB = 22 # Natural death
 DEATH_THRESHOLD = 22 #22 # beta in death_probability fxn
 PATHOGENICITY = -4.2 # alpha in death_probability fxn
@@ -9,7 +9,6 @@ BABY_DEATH = 1 - (.52^(1/7))^4 # Probability of dying as baby
 INTRINSIC_DEATH_RATE = 0.33 # Age related death rate
 RANDOM_DEATH_PROB = 0.01 # Lower bound to death prob
 OLD_DEATH = (1 / (20 * 12)^2) # Above 20 years old the raccoon dies
-
 
 
 ## Age parameters
@@ -42,12 +41,12 @@ ENCOUNTER_K = 0.5 # Aggregation parameter of the NBD
 ENCOUNTER_PARAMS = c(2, 5)
 
 INFECTIVITY = 0.02 # Probability of infectivity
-RESISTANCE = 0.1 # How quickly a raccoon gains resistance based on previous load
+RESISTANCE = 0.03 # How quickly a raccoon gains resistance based on previous load
 EGG_DECAY = 0.3 # Rate of egg decay such that 3% chance of survival after year
 
 # See fit_param.R for how we got these values
-WORM_SURV_TRESH = 4.7104 # Threshold parameter of worm survival probability
-WORM_SURV_SLOPE = -0.9446 # Slope of worm surv probability
+WORM_SURV_TRESH = 4.7104 #/ 2 # Threshold parameter of worm survival probability
+WORM_SURV_SLOPE = -0.9446 #/ 2 # Slope of worm surv probability
 
 # Time parameters: Each time step is a month
-TIME_STEPS = 150
+TIME_STEPS = 100

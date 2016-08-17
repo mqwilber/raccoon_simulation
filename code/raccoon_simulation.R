@@ -18,6 +18,8 @@ source("raccoon_init_arrays.R") # Load in the initial arrays
 # Loop through time steps
 for(time in 2:(TIME_STEPS + 1)){
 
+    print(paste("Beginning step", time - 1, "of", TIME_STEPS))
+
     new_babies = 0
     babies_at_this_time_vect = array(NA, dim=dim(raccoon_worm_array)[2])
     previous_prevalence = get_prevalence(raccoon_worm_array)
@@ -70,13 +72,22 @@ for(time in 2:(TIME_STEPS + 1)){
                 # Assign previous cohort to current cohort
                 infra_worm_array[[rac]][time, 1:(time - 1)] = new_cohort
 
+                # TODO: Only pick-up eggs if less than 4 months
+                # Otherwise pick up rodent
+
                 # 4. Pick eggs
+
+                if(age_now <= 12){
+
                 worms_acquired = pick_up_eggs(ENCOUNTER_MEAN,
                                             ENCOUNTER_K,
                                             INFECTIVITY, RESISTANCE,
                                             previous_prevalence[1:(time - 1)],
                                             raccoon_worm_array[time - 1, rac],
                                             EGG_DECAY, ENCOUNTER_PARAMS)
+                } else{
+                    worms_acquired = 0
+                }
 
                 infra_worm_array[[rac]][time, time] = worms_acquired
                 raccoon_worm_array[time, rac] = sum(infra_worm_array[[rac]][time, ], na.rm=T)#raccoon_worm_array[time - 1, rac] + worms_acquired

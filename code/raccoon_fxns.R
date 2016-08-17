@@ -116,6 +116,7 @@ pick_up_eggs = function(emean, ek, infect, resist, prev, load, egg_decay,
     # egg_decay: Egg decay rate
     # eprob_param: parameter for determining encounter probability
 
+
     # Exponential decline of infectivity.
     infect_red = infect * exp(-resist * load)
 
@@ -126,6 +127,8 @@ pick_up_eggs = function(emean, ek, infect, resist, prev, load, egg_decay,
     return(new_eggs)
 
 }
+
+#TODO: pick_up_rodent fxn
 
 get_eprob = function(prev_vector, egg_decay, eprob_param){
     # Calculating our encounter probability from previous prevalences
@@ -143,7 +146,7 @@ get_eprob = function(prev_vector, egg_decay, eprob_param){
     # if there is no past infection eprob = 0
     if(metric == 0){
         return(0)
-    } else{ # The the metric is not zero, it determines infection prob
+    } else{ # The metric is not zero, it determines infection prob
             # according to a logistic function.
 
         metric = log(metric)
@@ -336,6 +339,36 @@ age_intensity_full = function(raccoon_worm_array, age_array, range){
     means = means[!is.na(means$age), ]
     ggplot(means, aes(x=age, y=mean_worms)) + geom_point() + geom_line()
 }
+
+age_prevalence_plot = function(raccoon_worm_array, age_array, range){
+    # Plot full age intensity profile
+    # range specifies which time range to calculate the age-intensity for
+
+    flat_age = as.vector(age_array[range, ])
+    flat_worms = as.vector(raccoon_worm_array[range, ])
+    full_dat = as.data.table(data.frame(list(age=flat_age, worms=flat_worms)))
+
+    prev_fxn = function(x){
+        no_na_x = x[!is.na(x)]
+        return(sum(no_na_x != 0) / length(no_na_x))
+    }
+
+    prevs = full_dat[, list(prev_worms=prev_fxn(worms)), by="age"]
+    prevs = prevs[!is.na(prevs$age), ]
+    ggplot(prevs, aes(x=age, y=prev_worms)) + geom_point() + geom_line()
+}
+
+age_intensity_plot = function(raccoon_worm_array, age_array, range){
+    # Plot full age intensity profile
+    # range specifies which time range to calculate the age-intensity for
+
+    flat_age = as.vector(age_array[range, ])
+    flat_worms = as.vector(raccoon_worm_array[range, ])
+    full_dat = as.data.table(data.frame(list(age=flat_age, worms=flat_worms)))
+    ggplot(full_dat, aes(x=age, y=worms)) + geom_point() + geom_smooth()
+
+}
+
 
 worm_traj = function(raccoon_worm_array){
     # Plot trajectories of individual raccoons
