@@ -14,12 +14,22 @@
 source("raccoon_fxns.R") # Load in the helper functions
 source("raccoon_parameters.R") # Load in the parameters
 source("raccoon_init_arrays.R") # Load in the initial arrays
-set.seed(1)
+# set.seed(1)
+
+cull_params = NULL #list(strategy="age", cull_prob=0.9, overlap_threshold=0.5)
+birth_control_params = NULL #list(strategy="random", distribution=0.9)
+management_time = 100
+
 
 # Loop through time steps
 for(time in 2:(TIME_STEPS + 1)){
 
     print(paste("Beginning step", time - 1, "of", TIME_STEPS))
+
+    if(time == management_time){
+        birth_control_params = NULL #list(strategy="random", distribution=0.2)
+        cull_params = NULL #list(strategy="age", cull_prob=0.9, overlap_threshold=0.5)
+    }
 
     new_babies = 0
     babies_at_this_time_vect = array(NA, dim=dim(raccoon_worm_array)[2])
@@ -37,19 +47,22 @@ for(time in 2:(TIME_STEPS + 1)){
             age_now = initial_age_vector[rac] +
                         sum(raccoon_dead_alive_array[, rac], na.rm=T)
 
+            overlap_now = human_risk_through_time[[time - 1]][rac]
+
             alive_now = kill_my_raccoon(raccoon_worm_array[time - 1, rac],
-                                            age_now,
+                                            age_now, overlap_now, 
                                             DEATH_THRESHOLD, PATHOGENICITY,
                                             BABY_DEATH,
                                             INTRINSIC_DEATH_RATE,
-                                            RANDOM_DEATH_PROB, OLD_DEATH)
+                                            RANDOM_DEATH_PROB, OLD_DEATH,
+                                            cull_params=cull_params)
+
             raccoon_dead_alive_array[time, rac] = alive_now
 
 
             if(alive_now){
 
                 # 1. Give birth if appropriate
-                # Calculate age. Minus 1 to account for alive dead decision
 
                 age_array[time, rac] = age_now
 
@@ -57,7 +70,8 @@ for(time in 2:(TIME_STEPS + 1)){
                 new_babies_now = give_birth(age_now, time, tot_racs,
                                                         MONTH_AT_REPRO,
                                                         FIRST_REPRO_AGE,
-                                                        LITTER_SIZE, BETA)
+                                                        LITTER_SIZE, BETA,
+                                    birth_control_params=birth_control_params)
 
                 # Add new babies to array to assign human contacts later
                 babies_at_this_time_vect[rac] = new_babies_now
@@ -155,14 +169,5 @@ for(time in 2:(TIME_STEPS + 1)){
     # Save the new human risk array
     human_risk_through_time[[time]] = human_array
 
-
-    ## TESTING CODE ##
-    # if(time == 10){
-    #     ind = !is.na(raccoon_worm_array[time, ])
-    #     raccoon_worm_array[time, ind] = 0
-    # }
-
 }
-
-
 

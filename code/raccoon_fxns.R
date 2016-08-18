@@ -45,9 +45,19 @@ senescence_fxn = function(age, old_death){
     return(prob_sen)
 } 
 
-kill_my_raccoon = function(worm_load, age, death_thresh, patho, intrinsic_death,
-                                baby_death, random_death_prob, old_death){
+kill_my_raccoon = function(worm_load, age, overlap, death_thresh, patho, intrinsic_death,
+                                baby_death, random_death_prob, old_death,
+                                cull_params=NULL){
     # Kill raccoon based on worm load and intrinsic mortality
+    # 
+    # Parameters
+    # ----------
+    # worm_load : int, worm load for a given raccoon
+    # age : int, age of given raccoon
+    # overlap : float, between 0 and 1. Human overlap of a given raccoon 
+    #            where 1 is high overlap
+    # ... : parameters defined in `raccoon_parameters.R`
+    # cull_params : list, see cull_strategy
 
     tr = runif(1)
 
@@ -56,11 +66,62 @@ kill_my_raccoon = function(worm_load, age, death_thresh, patho, intrinsic_death,
     surv_prob = (1 - death_probability(worm_load, death_thresh, patho)) *
                         (1 - intrinsic_death_fxn(age, intrinsic_death,
                             baby_death)) * (1 - random_death_prob) * 
-                            (1 - senescence_fxn(age, old_death))
+                            (1 - senescence_fxn(age, old_death)) *
+                            (1 - cull_strategy(cull_params, age, overlap))
     alive_now = tr > (1 - surv_prob)
 
     return(alive_now)
 
+}
+
+cull_strategy = function(cull_params, age, overlap){
+    # Culling strategy function. cull_params is a list that contains the 
+    # necessary parameters
+    # for culling strategy. It must contain a slot 'strategy' that specifies the
+    # strategy that is being used to cull. If NULL, no culling is done.
+    #
+    # Possible strategies are:
+    # 1. `random`: Cull everybody equally
+    #   - Additional parameters: `cull_prob`: probability of being culled
+    # 2. `age`: Only cull juveniles i.e. less than a year old
+    #   - Additional parameters: `cull_prob`: probability of being culled
+    # 3. `human`: Only cull individuals with a human overlap greater than 
+    #              `overlap_threshold`
+    #   - Additional parameters: `cull_prob`: probability of being culled
+    #                            `overlap_threshold`: Between 0 and 1,
+    #                             threshold above which you are culled
+    #
+    # Parameters
+    # ----------
+    # cull_params : list, see above
+    # age : int, raccoon age
+    # overlap : float, 
+
+    if(is.null(cull_params)){
+        return(0)
+    }
+
+    if(cull_params$strategy == "random"){
+
+        cull_prob = cull_params$cull_prob
+
+    } else if(cull_params$strategy == "age"){
+
+        cull_prob = ifelse(age < 12, cull_params$cull_prob, 0)
+      
+    } else if(cull_params$strategy == "human"){
+
+        if(is.null(cull_params$overlap_threshold)){
+            stop("Provide overlap_threshold")
+        }
+
+        cull_prob = ifelse(overlap > cull_params$overlap_threshold, 
+                                                cull_params$cull_prob, 0)
+    } else{
+        stop(paste(cull_params$strategy, "is not a recognized strategy. Try random, age, or human"))
+    }
+
+    return(cull_prob)
 }
 
 kill_raccoon_worms = function(previous_chorts, death_thresh, death_slope){
@@ -83,7 +144,8 @@ kill_raccoon_worms = function(previous_chorts, death_thresh, death_slope){
 
 give_birth = function(age_now, time, tot_racs,
                         month_at_repro,
-                        first_repro_age, litter_size, beta){
+                        first_repro_age, litter_size, beta,
+                        birth_control_params=NULL){
     # Decide how many babies are produced by a raccoon. Check if the month
     # is right and if the raccoon is old enough. Then chose the
 
@@ -93,7 +155,8 @@ give_birth = function(age_now, time, tot_racs,
 
         if(age_now >= first_repro_age){ # If the age is right
 
-            repro_prob = exp(-(beta*tot_racs)) # Think about this beta function
+            birth_event = birth_control_strategy(birth_control_params)
+            repro_prob = birth_event * exp(-(beta*tot_racs)) # Think about this beta function
             repro = rbinom(1, litter_size, repro_prob)
         }
 
@@ -102,6 +165,37 @@ give_birth = function(age_now, time, tot_racs,
     return(repro)
 
 }
+
+birth_control_strategy = function(birth_control_params){
+    # Strategies for birth control. `birth_control_params` must have the 
+    # name `strategy` which specifies which birth control strategy to use.
+    # 
+    # 
+    # Possible strategies are:
+    # 1. `random` : All individuals are susceptible to birth control
+    #   - Additional parameters: `distributions` - between 0 and 1 where
+    #   0 is no distribution of birth control and 1 is complete distribution
+    #   of birth control.
+    #
+    # Parameters
+    # ----------
+    # birth_control_params : list, see above
+    #
+    # Returns
+    # --------
+    # 0 or 1 determining whether or not it enter breeding cycle
+
+    if(is.null(birth_control_params$strategy)){
+        return(1)
+    }
+
+    if(birth_control_params$strategy == "random"){
+        birth_event = rbinom(1, 1, 1 - birth_control_params$distribution)
+    }
+
+    return(birth_event)
+}
+
 
 
 pick_up_eggs = function(emean, ek, infect, resist, prev, load, egg_decay,
