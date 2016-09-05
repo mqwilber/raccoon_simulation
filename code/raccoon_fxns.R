@@ -124,7 +124,8 @@ cull_strategy = function(cull_params, age, overlap){
     return(cull_prob)
 }
 
-kill_raccoon_worms = function(previous_chorts, death_thresh, death_slope){
+kill_raccoon_worms = function(previous_chorts, death_thresh, death_slope, 
+                got_bait=0){
     # Function to kill worms in raccoon based on worm age
     # Assuming a logistic function of survival prob of worms with cohort
     # age and then killing the worms based on a draw from a binomial
@@ -137,8 +138,59 @@ kill_raccoon_worms = function(previous_chorts, death_thresh, death_slope){
 
     new_cohort = rbinom(sum(non_na_ind), previous_cohorts[non_na_ind],
                                                  surv_probs[non_na_ind])
+
+    # Kill worms in cohort based on getting bait
+    new_cohort = new_cohort * (1 - got_bait)
+
     updated_cohort[non_na_ind] = new_cohort
     return(updated_cohort)
+
+}
+
+picked_up_bait = function(overlap, worm_control_params=NULL){
+    # Function which determines whether or not a raccoon picks up 
+    # anti-helminthic bait. worm_control_params is a list that contains the 
+    # necessary parameters
+    # Worm_control_params must contain a slot 'strategy' that specifies the
+    # strategy that is being used to bait. If NULL, no bating is done.
+    #
+    # Possible strategies are:
+    # 1. `random`: Bait everybody equally
+    #   - Additional parameters: `distribution`: distribution of bait in the 
+    #                                        environment between 0 and 1
+    # 2. `human`: Only bait individuals with a human overlap greater than 
+    #              `overlap_threshold`
+    #   - Additional parameters: `distribution`: Distribution of bait between 0 and 1
+    #                            `overlap_threshold`: Between 0 and 1,
+    #                             threshold above which you are baited
+    #
+
+
+     # Clear worms based on strategy
+    if(!is.null(worm_control_params)){
+
+        if(worm_control_params$strategy == "random"){
+
+            got_bait = rbinom(1, 1, worm_control_params$distribution)
+
+        } else if(worm_control_params$strategy == "human"){
+
+            if(is.null(worm_control_params$overlap_threshold)){
+                stop("Provide overlap_threshold")
+            }
+
+            got_bait = ifelse(overlap > worm_control_params$overlap_threshold, 
+                    rbinom(1, 1, worm_control_params$distribution), 0)
+
+        } else {
+            stop(paste(worm_control_params$strategy, "is not a recognized strategy. Try random or human"))
+
+        }
+    } else{
+        got_bait = 0
+    }
+
+    return(got_bait)
 
 }
 
@@ -553,5 +605,8 @@ worm_traj = function(raccoon_worm_array){
 
     sdata = stack(data.frame(raccoon_worm_array))
     sdata$time = rep(1:dim(raccoon_worm_array)[1], dim(raccoon_worm_array)[2])
-    ggplot(sdata, aes(x=time, y=values, color=ind)) + geom_line() + geom_point()
+    tplot = ggplot(sdata, aes(x=time, y=values, color=ind)) + 
+                    geom_line() + geom_point() +
+                    theme(legend.position="none")
+    return(tplot)
 }

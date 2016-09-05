@@ -14,11 +14,12 @@
 source("raccoon_fxns.R") # Load in the helper functions
 source("raccoon_parameters.R") # Load in the parameters
 source("raccoon_init_arrays.R") # Load in the initial arrays
-# set.seed(1)
+set.seed(1)
 
 cull_params = NULL #list(strategy="age", cull_prob=0.9, overlap_threshold=0.5)
 birth_control_params = NULL #list(strategy="random", distribution=0.9)
-management_time = 100
+worm_control_params = NULL #list(strategy="random", distribution=0.5)
+management_time = 10
 
 
 # Loop through time steps
@@ -29,6 +30,8 @@ for(time in 2:(TIME_STEPS + 1)){
     if(time == management_time){
         birth_control_params = NULL #list(strategy="random", distribution=0.2)
         cull_params = NULL #list(strategy="age", cull_prob=0.9, overlap_threshold=0.5)
+        worm_control_params = list(strategy="human", distribution=1, 
+                                            overlap_threshold=0.99) #list(strategy="random", distribution=0)
     }
 
     new_babies = 0
@@ -80,13 +83,15 @@ for(time in 2:(TIME_STEPS + 1)){
                 # 2. Deposit Eggs (ignoring for now)
 
                 # 3. Kill old worms for each possible source of worms
+                got_bait = picked_up_bait(overlap_now, worm_control_params)
 
                 for(tw in 1:length(all_worms_infra_array)){
 
                     previous_cohorts = all_worms_infra_array[[tw]][[rac]][time - 1, 1:(time - 1)]
                     new_cohort = kill_raccoon_worms(previous_cohorts,
                                                     WORM_SURV_TRESH,
-                                                    WORM_SURV_SLOPE)
+                                                    WORM_SURV_SLOPE,
+                                                    got_bait=got_bait)
 
                     # Assign previous cohort to current cohort
                     all_worms_infra_array[[tw]][[rac]][time, 1:(time - 1)] = new_cohort
