@@ -29,9 +29,9 @@ for(time in 2:(TIME_STEPS + 1)){
 
     if(time == management_time){
         birth_control_params = NULL #list(strategy="random", distribution=0.2)
-        cull_params = NULL #list(strategy="age", cull_prob=0.9, overlap_threshold=0.5)
-        worm_control_params = list(strategy="human", distribution=1, 
-                                            overlap_threshold=0.99) #list(strategy="random", distribution=0)
+        cull_params = list(strategy="random", cull_prob=0.05, overlap_threshold=0.5)
+        worm_control_params = NULL #list(strategy="human", distribution=1, 
+                                            #overlap_threshold=0.99) #list(strategy="random", distribution=0)
     }
 
     new_babies = 0
