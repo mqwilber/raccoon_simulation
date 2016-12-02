@@ -124,7 +124,7 @@ cull_strategy = function(cull_params, age, overlap){
     return(cull_prob)
 }
 
-kill_raccoon_worms = function(previous_chorts, death_thresh, death_slope, 
+kill_raccoon_worms = function(previous_cohorts, death_thresh, death_slope, 
                 got_bait=0){
     # Function to kill worms in raccoon based on worm age
     # Assuming a logistic function of survival prob of worms with cohort
@@ -609,4 +609,188 @@ worm_traj = function(raccoon_worm_array){
                     geom_line() + geom_point() +
                     theme(legend.position="none")
     return(tplot)
+}
+
+
+## Get parameters and arrays ##
+
+get_simulation_parameters = function(...){
+    # Get parameters for the simulation
+    #
+    # You can pass keyword arguments to this function to reassign the 
+    # default parameters
+
+    ## Raccoon parameters
+
+    INIT_NUM_RACCOONS = 100
+    #DEATH_PROB = 22 # Natural death
+    DEATH_THRESHOLD = 22 #22 # beta in death_probability fxn
+    PATHOGENICITY = -4.2 # alpha in death_probability fxn
+    BABY_DEATH = 1 - (.52^(1/7))^4 # Probability of dying as baby
+    INTRINSIC_DEATH_RATE = 0.33 # Age related death rate
+    RANDOM_DEATH_PROB = 0.01 # Lower bound to death prob
+    OLD_DEATH = (1 / (20 * 12)^2) # Above 20 years old the raccoon dies
+    AGE_EGG_RESISTANCE = 4 # Age above which raccoons no longer pick up eggs
+    RODENT_ENCOUNTER_PROB = 0.5 # Monthly probability of encountering a rodent
+
+    ## Rodent parameters
+    MOUSE_WORM_MEAN = 3.49 # Abundance of worms in peromyscus estimated from Sara's data
+    MOUSE_WORM_AGG = 0.22 # Aggregation of worms (k parameter) in peromyscus
+    LARVAL_WORM_INFECTIVITY = 0.25 # Probability of larval worm establishing
+
+
+    ## Age parameters
+    FIRST_REPRO_AGE = 10 # months
+    LITTER_SIZE = 4 # Maximum litter size
+    MONTH_AT_REPRO = 12
+    DISPERSAL_AGE = 12 # months
+
+    ## Ricker function for density-dependent recruitment of new babies
+    K_CAPACITY = 40 # "Carrying" capacity for raccoons. Need to figure out what
+                    # what is determining carrying capacity for the deterministic
+                    # version of this model
+    DI_NEW_BABY_DEATH_RATE = 0 # Density independent new baby death
+    BIRTH_RATE = log(LITTER_SIZE) # Gives birth rate. Little r in ricker function
+    BETA = BIRTH_RATE / K_CAPACITY
+    # TODO: CHECK WHY I DID THIS?
+
+
+    # PARASITE PARAMETERS
+    # ENVIRONMENTAL_POOL = 0
+    # EGG_PRODUCTION_PER_WORM = 100 # eggs per month (note this is very wrong)
+    ENCOUNTER_MEAN = 500 # Mean number of encountered eggs
+    ENCOUNTER_K = 1 # Aggregation parameter of the NBD
+
+    # A set of parameters that determines the
+    # probability of encounter given a weighted history of prevalence. The first
+    # parameter dictates at what level of the log metric eprob is close to 1 and
+    # the second parameter dictates how quickly eprob goes to 1.
+    # TODO: WE WILL NEED TO FIDDLE WITH THESE
+    ENCOUNTER_PARAMS = c(2, 5)
+
+    INFECTIVITY = 0.02 # Probability of infectivity
+    RESISTANCE = 0.03 # How quickly a raccoon gains resistance based on previous load
+    EGG_DECAY = 0.3 # Rate of egg decay such that 2%-3% chance of survival after year. TODO: Revisit this
+
+    # See fit_param.R for how we got these values
+    WORM_SURV_TRESH = 4.7104 #/ 2 # Threshold parameter of worm survival probability
+    WORM_SURV_SLOPE = -0.9446 #/ 2 # Slope of worm surv probability
+
+    # Time parameters: Each time step is a month
+    TIME_STEPS = 100
+
+    params=list(INIT_NUM_RACCOONS=INIT_NUM_RACCOONS,
+                DEATH_THRESHOLD=DEATH_THRESHOLD,
+                PATHOGENICITY=PATHOGENICITY,
+                BABY_DEATH=BABY_DEATH,
+                INTRINSIC_DEATH_RATE=INTRINSIC_DEATH_RATE,
+                RANDOM_DEATH_PROB=RANDOM_DEATH_PROB,
+                OLD_DEATH=OLD_DEATH,
+                AGE_EGG_RESISTANCE=AGE_EGG_RESISTANCE,
+                RODENT_ENCOUNTER_PROB=RODENT_ENCOUNTER_PROB,
+                MOUSE_WORM_MEAN=MOUSE_WORM_MEAN,
+                MOUSE_WORM_AGG=MOUSE_WORM_AGG,
+                LARVAL_WORM_INFECTIVITY=LARVAL_WORM_INFECTIVITY,
+                FIRST_REPRO_AGE=FIRST_REPRO_AGE,
+                LITTER_SIZE=LITTER_SIZE,
+                MONTH_AT_REPRO=MONTH_AT_REPRO,
+                DISPERSAL_AGE=DISPERSAL_AGE,
+                K_CAPACITY=K_CAPACITY,
+                DI_NEW_BABY_DEATH_RATE=DI_NEW_BABY_DEATH_RATE,
+                BIRTH_RATE=BIRTH_RATE,
+                BETA=BETA,
+                ENCOUNTER_MEAN=ENCOUNTER_MEAN,
+                ENCOUNTER_K=ENCOUNTER_K,
+                ENCOUNTER_PARAMS=ENCOUNTER_PARAMS,
+                INFECTIVITY=INFECTIVITY,
+                RESISTANCE=RESISTANCE,
+                EGG_DECAY=EGG_DECAY,
+                WORM_SURV_TRESH=WORM_SURV_TRESH,
+                WORM_SURV_SLOPE=WORM_SURV_SLOPE,
+                TIME_STEPS=TIME_STEPS)
+
+    new_params = list(...)
+
+    # Update parameter list with new params
+    if(length(new_params) != 0){
+
+        for(name in names(new_params)){
+            params[[name]] = new_params[[name]]
+        }
+
+    }
+
+    return(params)
+
+}
+
+
+get_init_arrays = function(prms){
+    # Initial arrays for raccoon simulation
+
+    # Set up the raccoon arrays
+
+    raccoon_dead_alive_array = array(NA, dim=c(prms$TIME_STEPS + 1, prms$INIT_NUM_RACCOONS))
+    initial_age_vector = rep(10, prms$INIT_NUM_RACCOONS)
+    age_array = array(NA, dim=c(prms$TIME_STEPS + 1, prms$INIT_NUM_RACCOONS))
+    age_array[1, ] = initial_age_vector
+    human_array = assign_human_contacts(prms$INIT_NUM_RACCOONS)
+    human_risk_through_time = list()
+    human_risk_through_time[[1]] = human_array
+
+
+    new_babies_vect = array(NA, dim=prms$TIME_STEPS + 1)
+    new_babies_vect[1] = 0
+
+    # Initialize all arrays
+    # Seed a raccoon with some worms
+    # raccoon_worm_array[1, ] = 10 # Seeding worms
+    raccoon_dead_alive_array[1, ] = 1 # All raccoons are alive
+
+    # Set up worm arrays.  This array hold the cohort of worms for each raccoon
+    # so that we can track the age-dependent death of the worms in the raccoons
+    infra_mouse_worm_array = lapply(1:prms$INIT_NUM_RACCOONS,
+                    function(x) array(NA, dim=c(prms$TIME_STEPS + 1, prms$TIME_STEPS + 1)))
+
+    infra_nonmouse_worm_array = lapply(1:prms$INIT_NUM_RACCOONS,
+                    function(x) array(NA, dim=c(prms$TIME_STEPS + 1, prms$TIME_STEPS + 1)))
+
+
+    # # Initialize worm arrays
+    # for(i in 1:length(infra_worm_array)){
+    #     infra_worm_array[[i]][1, 1] = raccoon_worm_array[1, i]
+
+    # }
+
+    # Initialize non-rodent worm array
+    for(i in 1:length(infra_nonmouse_worm_array)){
+        infra_nonmouse_worm_array[[i]][1, 1] = 10
+
+    }
+
+    # Initialize non-rodent worm array
+    for(i in 1:length(infra_nonmouse_worm_array)){
+        infra_mouse_worm_array[[i]][1, 1] = 0
+
+    }
+
+    all_worms_infra_array = list(infra_nonmouse_worm_array, infra_mouse_worm_array)
+
+    # Make total worm arrays
+    # infra_worm_array = combine_worm_arrays(all_worms_infra_array, raccoon_dead_alive_array)
+    raccoon_worm_array = get_tot_worm_array_from_infra(infra_nonmouse_worm_array, raccoon_dead_alive_array) 
+
+
+    init_arrays = list(raccoon_dead_alive_array=raccoon_dead_alive_array,
+                       initial_age_vector=initial_age_vector,
+                       age_array=age_array,
+                       human_array=human_array,
+                       human_risk_through_time=human_risk_through_time,
+                       new_babies_vect=new_babies_vect,
+                       infra_mouse_worm_array=infra_mouse_worm_array,
+                       infra_nonmouse_worm_array=infra_nonmouse_worm_array,
+                       all_worms_infra_array=all_worms_infra_array,
+                       raccoon_worm_array=raccoon_worm_array)
+
+    return(init_arrays)
 }

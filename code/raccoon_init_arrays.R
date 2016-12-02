@@ -51,3 +51,17 @@ all_worms_infra_array = list(infra_nonmouse_worm_array, infra_mouse_worm_array)
 # Make total worm arrays
 # infra_worm_array = combine_worm_arrays(all_worms_infra_array, raccoon_dead_alive_array)
 raccoon_worm_array = get_tot_worm_array_from_infra(infra_nonmouse_worm_array, raccoon_dead_alive_array) 
+
+
+init_arrays = list(raccoon_dead_alive_array=raccoon_dead_alive_array,
+                   initial_age_vector=initial_age_vector,
+                   age_array=age_array,
+                   human_array=human_array,
+                   human_risk_through_time=human_risk_through_time,
+                   new_babies_vect=new_babies_vect,
+                   infra_mouse_worm_array=infra_mouse_worm_array,
+                   infra_nonmouse_worm_array=infra_nonmouse_worm_array,
+                   all_worms_infra_array=all_worms_infra_array,
+                   raccoon_worm_array=raccoon_worm_array)
+
+return(init_arrays)
