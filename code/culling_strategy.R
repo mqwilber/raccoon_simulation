@@ -14,10 +14,7 @@
 library(parallel)
 
 source("raccoon_fxns.R") # Load in the helper functions
-# source("raccoon_parameters.R") # Load in the parameters
-# source("raccoon_init_arrays.R") # Load in the initial arrays
 set.seed(1)
-
 
 
 full_simulation = function(cull_params, birth_control_params, 
@@ -34,11 +31,13 @@ full_simulation = function(cull_params, birth_control_params,
     # worm_control_params : list or NULL, parameter for worm control strats
     #           list(strategy="random", distribution=0.5), see picked_up_bait
     # management_time : int, time in simulation where management begins
+    # prms : list, simulation parameters
+    # init_arrays : initial arrays for holding results
+    # print_it : bool, if TRUE prints progress, otherwise False.
 
 
     # Save the init arrays to the current environment...might not work
     list2env(init_arrays, envir=environment())
-    #source(path_to_init_arrays, local=TRUE)
 
     # Loop through time steps
     for(time in 2:(prms$TIME_STEPS + 1)){
@@ -47,19 +46,26 @@ full_simulation = function(cull_params, birth_control_params,
             print(paste("Beginning step", time - 1, "of", prms$TIME_STEPS))
         }
 
-        if(time == management_time){
-            birth_control_params = birth_control_params 
-            cull_params = cull_params 
-            worm_control_params = worm_control_params 
-        } else{
-            birth_control_params = NULL 
-            cull_params = NULL 
-            worm_control_params = NULL 
-        }
 
         new_babies = 0
         babies_at_this_time_vect = array(NA, dim=dim(raccoon_worm_array)[2])
         previous_prevalence = get_prevalence(raccoon_worm_array)
+
+        # If time is >= management time begin management
+        if(time >= management_time){
+            tbirth_control_params = birth_control_params 
+            tcull_params = update_cull_params(cull_params, 
+                                             raccoon_dead_alive_array[time - 1, ],
+                                             age_array[time - 1, ], 
+                                             human_risk_through_time[[time - 1]]) 
+            tworm_control_params = worm_control_params 
+        } else{
+            tbirth_control_params = NULL 
+            tcull_params = NULL 
+            tworm_control_params = NULL 
+        }
+
+        print(c(time, tcull_params$cull_prob))
 
         # Loop through raccoons
         for(rac in 1:dim(raccoon_worm_array)[2]){
@@ -81,7 +87,7 @@ full_simulation = function(cull_params, birth_control_params,
                                                 prms$BABY_DEATH,
                                                 prms$INTRINSIC_DEATH_RATE,
                                                 prms$RANDOM_DEATH_PROB, prms$OLD_DEATH,
-                                                cull_params=cull_params)
+                                                cull_params=tcull_params)
 
                 raccoon_dead_alive_array[time, rac] = alive_now
 
@@ -97,7 +103,7 @@ full_simulation = function(cull_params, birth_control_params,
                                                             prms$MONTH_AT_REPRO,
                                                             prms$FIRST_REPRO_AGE,
                                                             prms$LITTER_SIZE, prms$BETA,
-                                        birth_control_params=birth_control_params)
+                                        birth_control_params=tbirth_control_params)
 
                     # Add new babies to array to assign human contacts later
                     babies_at_this_time_vect[rac] = new_babies_now
@@ -106,7 +112,7 @@ full_simulation = function(cull_params, birth_control_params,
                     # 2. Deposit Eggs (ignoring for now)
 
                     # 3. Kill old worms for each possible source of worms
-                    got_bait = picked_up_bait(overlap_now, worm_control_params)
+                    got_bait = picked_up_bait(overlap_now, tworm_control_params)
 
                     for(tw in 1:length(all_worms_infra_array)){
 
@@ -212,86 +218,88 @@ full_simulation = function(cull_params, birth_control_params,
 
 ## RUNNING SIMULATION ###
 
-cull_params = list(strategy="random", cull_prob=0.5, overlap_threshold=0.5)
+cull_params = list(strategy="random", cull_prob=0.5, quota=10, overlap_threshold=0.5)
 birth_control_params = NULL #list(strategy="random", distribution=0.9)
 worm_control_params = NULL #list(strategy="random", distribution=0.5)
 management_time = 10
 
-# params = get_simulation_parameters() # Load in simulation parameters
-# init_arrays = get_init_arrays(params) # Load in init arrays
-# all_res = full_simulation(cull_params, birth_control_params, 
-#                                 worm_control_params, management_time,
-#                                 params, init_arrays)
-
-
-# params = get_simulation_parameters() # Load in simulation parameters
-# init_arrays = get_init_arrays(params) # Load in init arrays
-
-cull_probs = seq(0, 0.01, len=15)
-SIMS = 8
-
-
-run_and_extract_results = function(i, prob){
-
-    print(paste("Simulation", i, "for prob", prob))
-
-    params = get_simulation_parameters() # Load in simulation parameters
-    init_arrays = get_init_arrays(params) # Load in init arrays
-
-    cull_params$cull_prob = prob
-    all_res = full_simulation(cull_params, birth_control_params, 
+params = get_simulation_parameters() # Load in simulation parameters
+init_arrays = get_init_arrays(params) # Load in init arrays
+all_res = full_simulation(cull_params, birth_control_params, 
                                 worm_control_params, management_time,
                                 params, init_arrays)
 
-    # Extract min, max rac pop sizes
-    pop_traj = rowSums(all_res$raccoon_dead_alive_array, na.rm=T)
-    tot_steps = length(pop_traj)
-    max_rac_pop = max(pop_traj[(tot_steps - 12):tot_steps])
-    min_rac_pop = min(pop_traj[(tot_steps - 12):tot_steps])
-    mean_rac_pop = mean(pop_traj[(tot_steps - 12):tot_steps])
-
-    # Extract min, max, worm pop sizes
-    worm_pop_traj = rowSums(all_res$raccoon_worm_array, na.rm=T)
-    max_worm_pop = max(worm_pop_traj[(tot_steps - 12):tot_steps])
-    min_worm_pop = min(worm_pop_traj[(tot_steps - 12):tot_steps])
-    mean_worm_pop = mean(worm_pop_traj[(tot_steps - 12):tot_steps])
-
-    # Human risk 
-    human_risk = get_human_risk_metric(all_res$human_risk_through_time, 
-                          all_res$raccoon_worm_array, 
-                          params$EGG_DECAY)$weighted
-    max_human_risk = max(human_risk[(tot_steps - 12):tot_steps])
-    min_human_risk = min(human_risk[(tot_steps - 12):tot_steps])
-    mean_human_risk = mean(human_risk[(tot_steps - 12):tot_steps])
-
-
-    return(c(min_rac_pop, mean_rac_pop, max_rac_pop, 
-             min_worm_pop, mean_worm_pop, max_worm_pop,
-             min_human_risk, mean_human_risk, max_human_risk))
-    # Extract human risk min max
-
-    # Return all together in list
-
-}
-
-
-sim_mean_results = list()
-sim_var_results = list()
 
 
 
-for(j in 1:length(cull_probs)){ # Looping through cull_probs
+# params = get_simulation_parameters() # Load in simulation parameters
+# init_arrays = get_init_arrays(params) # Load in init arrays
+
+# cull_probs = seq(0, 0.01, len=15)
+# SIMS = 8
+
+
+# run_and_extract_results = function(i, prob){
+
+#     print(paste("Simulation", i, "for prob", prob))
+
+#     params = get_simulation_parameters() # Load in simulation parameters
+#     init_arrays = get_init_arrays(params) # Load in init arrays
+
+#     cull_params$cull_prob = prob
+#     all_res = full_simulation(cull_params, birth_control_params, 
+#                                 worm_control_params, management_time,
+#                                 params, init_arrays)
+
+#     # Extract min, max rac pop sizes
+#     pop_traj = rowSums(all_res$raccoon_dead_alive_array, na.rm=T)
+#     tot_steps = length(pop_traj)
+#     max_rac_pop = max(pop_traj[(tot_steps - 12):tot_steps])
+#     min_rac_pop = min(pop_traj[(tot_steps - 12):tot_steps])
+#     mean_rac_pop = mean(pop_traj[(tot_steps - 12):tot_steps])
+
+#     # Extract min, max, worm pop sizes
+#     worm_pop_traj = rowSums(all_res$raccoon_worm_array, na.rm=T)
+#     max_worm_pop = max(worm_pop_traj[(tot_steps - 12):tot_steps])
+#     min_worm_pop = min(worm_pop_traj[(tot_steps - 12):tot_steps])
+#     mean_worm_pop = mean(worm_pop_traj[(tot_steps - 12):tot_steps])
+
+#     # Human risk 
+#     human_risk = get_human_risk_metric(all_res$human_risk_through_time, 
+#                           all_res$raccoon_worm_array, 
+#                           params$EGG_DECAY)$weighted
+#     max_human_risk = max(human_risk[(tot_steps - 12):tot_steps])
+#     min_human_risk = min(human_risk[(tot_steps - 12):tot_steps])
+#     mean_human_risk = mean(human_risk[(tot_steps - 12):tot_steps])
+
+
+#     return(c(min_rac_pop, mean_rac_pop, max_rac_pop, 
+#              min_worm_pop, mean_worm_pop, max_worm_pop,
+#              min_human_risk, mean_human_risk, max_human_risk))
+#     # Extract human risk min max
+
+#     # Return all together in list
+
+# }
+
+
+# sim_mean_results = list()
+# sim_var_results = list()
+
+
+
+# for(j in 1:length(cull_probs)){ # Looping through cull_probs
     
-    # Paralellize within each cull_prob
-    maxs = mclapply(1:SIMS, run_and_extract_results, cull_probs[j], 
-                                                            mc.cores=4)
+#     # Paralellize within each cull_prob
+#     maxs = mclapply(1:SIMS, run_and_extract_results, cull_probs[j], 
+#                                                             mc.cores=4)
 
-    cull_prob_matrix = do.call(rbind, maxs)
+#     cull_prob_matrix = do.call(rbind, maxs)
 
-    cull_means = colMeans(cull_prob_matrix)
-    cull_vars = apply(cull_prob_matrix, 2, sd)
-    sim_mean_results[[j]] = cull_means
-    sim_var_results[[j]] = cull_vars
+#     cull_means = colMeans(cull_prob_matrix)
+#     cull_vars = apply(cull_prob_matrix, 2, sd)
+#     sim_mean_results[[j]] = cull_means
+#     sim_var_results[[j]] = cull_vars
 
-}
+# }
 

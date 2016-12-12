@@ -74,7 +74,69 @@ kill_my_raccoon = function(worm_load, age, overlap, death_thresh, patho, intrins
 
 }
 
-cull_strategy = function(cull_params, age, overlap){
+update_cull_params = function(cull_params, raccoon_dead_alive_vect, 
+                                age_vect, human_risk_through_time_vect){
+    # Function for updating cull_params each time step to get per capita
+    # raccoon survival prob based on quota of raccoon to kill each time point
+    #
+    # Parameters
+    # ----------
+    # cull_params : list or NULL, cull params, see cull_strategy
+    # raccoon_dead_alive_vect: vector, vector specifying whether raccoons 
+    #      are dead or alive at time t - 1 
+    # age_vect : vector, specifying the ages of alive raccoons at year time
+    #                   t - 1
+    # human_risk_through_time_vect: vector, specifies the human overlap value
+    #                   of alive raccoons at time t - 1.
+    # Returns
+    # --------
+    # : An updates cull_params list with cull_prob updated based on the quota
+    #
+    # Notes
+    # -----
+    # The cull_prob that is computed is based on the population of vulnerable
+    # raccoons.  For example, for the random strategy 
+    #           cull_prob = quota / tot_pop at time t - 1 
+    # For the age strategy
+    #           cull_prob = quota / tot_pop < 12 at time t - 1
+    # For the human strategy
+    #           cull_prob = quota / tot_pop > overlap threshold at time - 1
+
+
+
+
+    if(is.null(cull_params)){
+        return(NULL)
+    }
+
+    if(cull_params$strategy == "random"){
+
+        pop_size = sum(raccoon_dead_alive_vect, na.rm=T)
+
+    } else if(cull_params$strategy == "age"){
+
+        pop_size = sum(age_vect < 12, na.rm=T)
+      
+    } else if(cull_params$strategy == "human"){
+
+        if(is.null(cull_params$overlap_threshold)){
+            stop("Provide overlap_threshold")
+        }
+
+        pop_size = sum(human_risk_through_time_vect > cull_params$overlap_threshold, na.rm=T)
+
+    } else{
+        stop(paste(cull_params$strategy, "is not a recognized strategy. Try random, age, or human"))
+    }
+
+    # Prob can't be greater than 1
+    cull_params$cull_prob = min(c(cull_params$quota / pop_size, 1))
+
+    return(cull_params)
+
+}
+
+cull_strategy = function(cull_params, age, overlap, prev_pop){
     # Culling strategy function. cull_params is a list that contains the 
     # necessary parameters
     # for culling strategy. It must contain a slot 'strategy' that specifies the
@@ -87,7 +149,8 @@ cull_strategy = function(cull_params, age, overlap){
     #   - Additional parameters: `cull_prob`: probability of being culled
     # 3. `human`: Only cull individuals with a human overlap greater than 
     #              `overlap_threshold`
-    #   - Additional parameters: `cull_prob`: probability of being culled
+    #   - Additional parameters: `quota`: absolute number of raccoons to kill
+    #                            `cull_prob`: per capita culling prob for a raccoon
     #                            `overlap_threshold`: Between 0 and 1,
     #                             threshold above which you are culled
     #
@@ -95,7 +158,9 @@ cull_strategy = function(cull_params, age, overlap){
     # ----------
     # cull_params : list, see above
     # age : int, raccoon age
-    # overlap : float, 
+    # overlap : float, human overlap threshold
+    # prev_pop : int, raccoon population size in the previous time step
+    #              TODO: Might need to be more specific here.  
 
     if(is.null(cull_params)){
         return(0)
@@ -622,7 +687,7 @@ get_simulation_parameters = function(...){
 
     ## Raccoon parameters
 
-    INIT_NUM_RACCOONS = 100
+    INIT_NUM_RACCOONS = 1000
     #DEATH_PROB = 22 # Natural death
     DEATH_THRESHOLD = 22 #22 # beta in death_probability fxn
     PATHOGENICITY = -4.2 # alpha in death_probability fxn
@@ -646,7 +711,7 @@ get_simulation_parameters = function(...){
     DISPERSAL_AGE = 12 # months
 
     ## Ricker function for density-dependent recruitment of new babies
-    K_CAPACITY = 40 # "Carrying" capacity for raccoons. Need to figure out what
+    K_CAPACITY = 200 #40 # "Carrying" capacity for raccoons. Need to figure out what
                     # what is determining carrying capacity for the deterministic
                     # version of this model
     DI_NEW_BABY_DEATH_RATE = 0 # Density independent new baby death
