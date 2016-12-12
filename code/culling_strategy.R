@@ -53,19 +53,24 @@ full_simulation = function(cull_params, birth_control_params,
 
         # If time is >= management time begin management
         if(time >= management_time){
-            tbirth_control_params = birth_control_params 
-            tcull_params = update_cull_params(cull_params, 
-                                             raccoon_dead_alive_array[time - 1, ],
-                                             age_array[time - 1, ], 
-                                             human_risk_through_time[[time - 1]]) 
-            tworm_control_params = worm_control_params 
+
+            res = get_cull_indices(cull_params,
+                                         raccoon_dead_alive_array[time - 1, ],
+                                         age_array[time - 1, ], 
+                                         human_risk_through_time[[time - 1]])
+            cull_indices = res[[1]]
+            pop_indices = res[[2]]
+
+            tbirth_control_params = NULL #birth_control_params 
+            tworm_control_params = NULL #worm_control_params 
         } else{
             tbirth_control_params = NULL 
-            tcull_params = NULL 
+            cull_indices = integer(0)
+            pop_indices = integer(0)
             tworm_control_params = NULL 
         }
 
-        print(c(time, tcull_params$cull_prob))
+        print(c(time, cull_indices, pop_indices))
 
         # Loop through raccoons
         for(rac in 1:dim(raccoon_worm_array)[2]){
@@ -87,7 +92,7 @@ full_simulation = function(cull_params, birth_control_params,
                                                 prms$BABY_DEATH,
                                                 prms$INTRINSIC_DEATH_RATE,
                                                 prms$RANDOM_DEATH_PROB, prms$OLD_DEATH,
-                                                cull_params=tcull_params)
+                                                cull=any(rac == cull_indices))
 
                 raccoon_dead_alive_array[time, rac] = alive_now
 
@@ -218,12 +223,12 @@ full_simulation = function(cull_params, birth_control_params,
 
 ## RUNNING SIMULATION ###
 
-cull_params = list(strategy="random", cull_prob=0.5, quota=10, overlap_threshold=0.5)
+cull_params = list(strategy="human", quota=2, overlap_threshold=0.9)
 birth_control_params = NULL #list(strategy="random", distribution=0.9)
 worm_control_params = NULL #list(strategy="random", distribution=0.5)
-management_time = 10
+management_time = 3
 
-params = get_simulation_parameters() # Load in simulation parameters
+params = get_simulation_parameters(K_CAPACITY=40, INIT_NUM_RACCOONS=100, TIME_STEPS=100) # Load in simulation parameters
 init_arrays = get_init_arrays(params) # Load in init arrays
 all_res = full_simulation(cull_params, birth_control_params, 
                                 worm_control_params, management_time,
