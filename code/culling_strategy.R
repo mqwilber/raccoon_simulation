@@ -70,7 +70,8 @@ full_simulation = function(cull_params, birth_control_params,
             tworm_control_params = NULL 
         }
 
-        print(c(time, cull_indices, pop_indices))
+        print(human_risk_through_time[[time - 1]][cull_indices])
+        #print(age_array[time - 1, cull_indices])
 
         # Loop through raccoons
         for(rac in 1:dim(raccoon_worm_array)[2]){
@@ -225,16 +226,16 @@ full_simulation = function(cull_params, birth_control_params,
 
 ## RUNNING SIMULATION ###
 
-cull_params = list(strategy="human", quota=2, overlap_threshold=0.9)
+cull_params = list(strategy="age", quota=3, overlap_threshold=0.9)
 birth_control_params = NULL #list(strategy="random", distribution=0.9)
 worm_control_params = NULL #list(strategy="random", distribution=0.5)
 management_time = 3
 
-params = get_simulation_parameters(TIME_STEPS=200) # Load in simulation parameters
+params = get_simulation_parameters(TIME_STEPS=100, K_CAPACITY=40, INIT_NUM_RACCOONS=100) # Load in simulation parameters
 init_arrays = get_init_arrays(params) # Load in init arrays
 all_res = full_simulation(cull_params, birth_control_params, 
                                 worm_control_params, management_time,
-                                params, init_arrays, print_it=TRUE)
+                                params, init_arrays)
 
 
 

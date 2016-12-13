@@ -125,7 +125,7 @@ get_cull_indices = function(cull_params, raccoon_dead_alive_vect,
             stop("Provide overlap_threshold")
         }
 
-        pop_inds = which((human_risk_through_time_vect > cull_params$overlap_threshold) & (!is.na(human_risk_through_time_vect)))
+        pop_inds = which(human_risk_through_time_vect > cull_params$overlap_threshold)
 
     } else{
         stop(paste(cull_params$strategy, "is not a recognized strategy. Try random, age, or human"))
@@ -133,7 +133,7 @@ get_cull_indices = function(cull_params, raccoon_dead_alive_vect,
 
 
     # Check if there are any raccoons to cull.  Only cull quota or pop_inds
-    if(length(pop_inds) > 0){
+    if(length(pop_inds) > 1){
         cull_inds = sample(pop_inds, min(c(length(pop_inds), cull_params$quota)))
     } else{
         cull_inds = pop_inds # Empty vector
