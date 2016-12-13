@@ -65,7 +65,7 @@ full_simulation = function(cull_params, birth_control_params,
             tworm_control_params = NULL 
         }
 
-        print(c(time, tcull_params$cull_prob))
+        # print(c(time, tcull_params$cull_prob))
 
         # Loop through raccoons
         for(rac in 1:dim(raccoon_worm_array)[2]){
@@ -145,7 +145,9 @@ full_simulation = function(cull_params, birth_control_params,
                         worms_acquired = pick_up_rodents(prms$MOUSE_WORM_MEAN,
                                                          prms$MOUSE_WORM_AGG,
                                                          prms$RODENT_ENCOUNTER_PROB,
-                                                         prms$LARVAL_WORM_INFECTIVITY)
+                                                         prms$LARVAL_WORM_INFECTIVITY,
+                                                         previous_prevalence[1:(time - 1)],
+                                                         prms$EGG_DECAY, prms$ENCOUNTER_PARAMS)
 
                         all_worms_infra_array[[1]][[rac]][time, time] = 0
                         all_worms_infra_array[[2]][[rac]][time, time] = worms_acquired
@@ -218,16 +220,16 @@ full_simulation = function(cull_params, birth_control_params,
 
 ## RUNNING SIMULATION ###
 
-cull_params = list(strategy="random", cull_prob=0.5, quota=10, overlap_threshold=0.5)
+cull_params = list(strategy="random", cull_prob=0.5, quota=0, overlap_threshold=0.5)
 birth_control_params = NULL #list(strategy="random", distribution=0.9)
 worm_control_params = NULL #list(strategy="random", distribution=0.5)
 management_time = 10
 
-params = get_simulation_parameters() # Load in simulation parameters
+params = get_simulation_parameters(TIME_STEPS=200) # Load in simulation parameters
 init_arrays = get_init_arrays(params) # Load in init arrays
 all_res = full_simulation(cull_params, birth_control_params, 
                                 worm_control_params, management_time,
-                                params, init_arrays)
+                                params, init_arrays, print_it=TRUE)
 
 
 
