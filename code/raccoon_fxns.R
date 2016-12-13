@@ -295,7 +295,8 @@ pick_up_eggs = function(emean, ek, infect, resist, prev, load, egg_decay,
 }
 
 pick_up_rodents = function(mouse_worm_mean, mouse_worm_agg, 
-                        rodent_encounter_prob, larval_worm_infectivity){
+                        rodent_encounter_prob, larval_worm_infectivity,
+                        prev_vector, egg_decay, eprob_param){
     # Function to pick up rodents from rodent pool.  Rodent 
     # encounters worm, picks up worms from a negative binomial, and 
     # then worms establish with some prob
@@ -309,13 +310,36 @@ pick_up_rodents = function(mouse_worm_mean, mouse_worm_agg,
     # -------
     # : number of larval worms acquired
 
-    larval_worms = rnbinom(1, mu=mouse_worm_mean, size=mouse_worm_agg) # Larval worms per mouse
+    # Update rodent mean and variance
+    mouse_mean_k = update_rodent_mean_var(prev_vector, egg_decay, eprob_param, 
+                                mouse_worm_mean, mouse_worm_agg)
+
+    larval_worms = rnbinom(1, mu=mouse_mean_k$mean, size=mouse_mean_k$k) # Larval worms per mouse
 
 
     new_worms = rbinom(1, 1, rodent_encounter_prob) * # Encounter with mice
                 rbinom(1, larval_worms, larval_worm_infectivity) # Worms establishing
 
     return(new_worms)
+
+}
+
+update_rodent_mean_var = function(prev_vector, egg_decay, eprob_param, 
+                                mouse_worm_mean, mouse_worm_agg){
+
+    eprob = get_eprob(prev_vector, egg_decay, eprob_param)
+
+    new_mean = eprob * mouse_worm_mean
+
+    # From Shaw and Dobson 1995 TPL
+    # TODO: Change intercept to match empirically observed k/variance value from
+    # rodents.
+    logvar = 1.551*log10(new_mean) + 1.098
+
+    # Convert to NBD k
+    new_k = (new_mean)^2 / (10^logvar - new_mean)
+
+    return(list(mean=new_mean, k=new_k))
 
 }
 
@@ -642,7 +666,7 @@ get_simulation_parameters = function(...){
 
     ## Raccoon parameters
 
-    INIT_NUM_RACCOONS = 1000
+    INIT_NUM_RACCOONS = 500
     #DEATH_PROB = 22 # Natural death
     DEATH_THRESHOLD = 22 #22 # beta in death_probability fxn
     PATHOGENICITY = -4.2 # alpha in death_probability fxn
@@ -666,13 +690,12 @@ get_simulation_parameters = function(...){
     DISPERSAL_AGE = 12 # months
 
     ## Ricker function for density-dependent recruitment of new babies
-    K_CAPACITY = 400 # "Carrying" capacity for raccoons. Need to figure out what
+    K_CAPACITY = 150 # "Carrying" capacity for raccoons. Need to figure out what
                     # what is determining carrying capacity for the deterministic
                     # version of this model
     DI_NEW_BABY_DEATH_RATE = 0 # Density independent new baby death
     BIRTH_RATE = log(LITTER_SIZE) # Gives birth rate. Little r in ricker function
     BETA = BIRTH_RATE / K_CAPACITY # TODO: CHECK WHY I DID THIS?
-
 
     # PARASITE PARAMETERS
     # ENVIRONMENTAL_POOL = 0
@@ -791,8 +814,8 @@ get_init_arrays = function(prms){
 
     }
 
-    # Initialize non-rodent worm array
-    for(i in 1:length(infra_nonmouse_worm_array)){
+    # Initialize rodent worm array
+    for(i in 1:length(infra_mouse_worm_array)){
         infra_mouse_worm_array[[i]][1, 1] = 0
 
     }

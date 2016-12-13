@@ -150,7 +150,9 @@ full_simulation = function(cull_params, birth_control_params,
                         worms_acquired = pick_up_rodents(prms$MOUSE_WORM_MEAN,
                                                          prms$MOUSE_WORM_AGG,
                                                          prms$RODENT_ENCOUNTER_PROB,
-                                                         prms$LARVAL_WORM_INFECTIVITY)
+                                                         prms$LARVAL_WORM_INFECTIVITY,
+                                                         previous_prevalence[1:(time - 1)],
+                                                         prms$EGG_DECAY, prms$ENCOUNTER_PARAMS)
 
                         all_worms_infra_array[[1]][[rac]][time, time] = 0
                         all_worms_infra_array[[2]][[rac]][time, time] = worms_acquired
@@ -228,11 +230,11 @@ birth_control_params = NULL #list(strategy="random", distribution=0.9)
 worm_control_params = NULL #list(strategy="random", distribution=0.5)
 management_time = 3
 
-params = get_simulation_parameters(K_CAPACITY=40, INIT_NUM_RACCOONS=100, TIME_STEPS=100) # Load in simulation parameters
+params = get_simulation_parameters(TIME_STEPS=200) # Load in simulation parameters
 init_arrays = get_init_arrays(params) # Load in init arrays
 all_res = full_simulation(cull_params, birth_control_params, 
                                 worm_control_params, management_time,
-                                params, init_arrays)
+                                params, init_arrays, print_it=TRUE)
 
 
 
