@@ -77,7 +77,6 @@ full_simulation = function(cull_params, birth_control_params,
         raccoon_worm_array[time, dead_inds] = NA
         raccoon_dead_alive_array[time, dead_inds] = 0
 
-        print(length(alive_inds))
         for(rac in alive_inds){
 
             # 1. Raccoon dies (Killing at the beginning of the time interval)
@@ -267,51 +266,59 @@ run_and_extract_results = function(i, quota, management_time,
 
 ## RUNNING SIMULATION ###
 
+
 # Simulation parameters
-cull_params = list(strategy="human", quota=20, overlap_threshold=0.25)
+cull_params = list(strategy="human", quota=5, overlap_threshold=0.25)
 birth_control_params = NULL #list(strategy="random", distribution=0.9)
 worm_control_params = NULL #list(strategy="random", distribution=0.5)
 
-# params = get_simulation_parameters(TIME_STEPS=300) # Load in simulation parameters
-# init_arrays = get_init_arrays(params) # Load in init arrays
-# all_res = full_simulation(cull_params, birth_control_params, 
-#                                 worm_control_params, management_time,
-#                                 params, init_arrays, print_it=TRUE)
 
 quotas = 0:10#0:5
 SIMS = 50
 management_time = 100
-time_steps = 200
+time_steps = 10
 col_names = c("min_rac_pop", "mean_rac_pop", "max_rac_pop", 
              "min_worm_pop", "mean_worm_pop", "max_worm_pop",
              "min_human_risk", "mean_human_risk", "max_human_risk")
-
-# Arrays to hold sim results
-sim_mean_results = list()
-sim_var_results = list()
+single_sim = TRUE # IF TRUE JUST RUNS A SINGLE SIMULATION 
 
 
-for(j in 1:length(quotas)){ # Looping through cull_probs
-    
-    # Parallelize within each quota
-    sim_vals = mclapply(1:SIMS, run_and_extract_results, 
-                                        quotas[j], management_time, 
-                                        cull_params, birth_control_params,
-                                        worm_control_params, time_steps, 
-                                        mc.cores=4)
+if(single_sim){ # Run a single simulation
 
-    cull_matrix = do.call(rbind, sim_vals)
+    params = get_simulation_parameters(TIME_STEPS=time_steps) # Load in simulation parameters
+    init_arrays = get_init_arrays(params) # Load in init arrays
+    all_res = full_simulation(cull_params, birth_control_params, 
+                                    worm_control_params, management_time,
+                                    params, init_arrays, print_it=TRUE)
+} else{ # Run a full simulation
 
-    cull_means = colMeans(cull_matrix)
-    cull_vars = apply(cull_matrix, 2, sd)
-    names(cull_means) = col_names
-    names(cull_vars) = col_names
-    sim_mean_results[[j]] = cull_means
-    sim_var_results[[j]] = cull_vars
+    # Arrays to hold sim results
+    sim_mean_results = list()
+    sim_var_results = list()
 
+
+    for(j in 1:length(quotas)){ # Looping through cull_probs
+        
+        # Parallelize within each quota
+        sim_vals = mclapply(1:SIMS, run_and_extract_results, 
+                                            quotas[j], management_time, 
+                                            cull_params, birth_control_params,
+                                            worm_control_params, time_steps, 
+                                            mc.cores=4)
+
+        cull_matrix = do.call(rbind, sim_vals)
+
+        cull_means = colMeans(cull_matrix)
+        cull_vars = apply(cull_matrix, 2, sd)
+        names(cull_means) = col_names
+        names(cull_vars) = col_names
+        sim_mean_results[[j]] = cull_means
+        sim_var_results[[j]] = cull_vars
+
+    }
+
+    saveRDS(sim_mean_results, "sim_mean_results.rds")
+    saveRDS(sim_var_results, "sim_var_results.rds")
+
+    print("Analysis complete")
 }
-
-saveRDS(sim_mean_results, "sim_mean_results.rds")
-saveRDS(sim_var_results, "sim_var_results.rds")
-
-print("Analysis complete")
