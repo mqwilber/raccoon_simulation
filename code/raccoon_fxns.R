@@ -686,7 +686,7 @@ get_simulation_parameters = function(...){
 
     ## Age parameters
     FIRST_REPRO_AGE = 10 # months
-    LITTER_SIZE = 4 # Maximum litter size
+    LITTER_SIZE = 3 # Maximum litter size
     MONTH_AT_REPRO = 12
     DISPERSAL_AGE = 12 # months
 
@@ -694,7 +694,7 @@ get_simulation_parameters = function(...){
     K_CAPACITY = 150 # "Carrying" capacity for raccoons. Need to figure out what
                     # what is determining carrying capacity for the deterministic
                     # version of this model
-    DI_NEW_BABY_DEATH_RATE = 0 # Density independent new baby death
+
     BIRTH_RATE = log(LITTER_SIZE) # Gives birth rate. Little r in ricker function
     BETA = BIRTH_RATE / K_CAPACITY # TODO: CHECK WHY I DID THIS?
 
@@ -702,7 +702,7 @@ get_simulation_parameters = function(...){
     # ENVIRONMENTAL_POOL = 0
     # EGG_PRODUCTION_PER_WORM = 100 # eggs per month (note this is very wrong)
     ENCOUNTER_MEAN = 500 # Mean number of encountered eggs
-    ENCOUNTER_K = 1 # Aggregation parameter of the NBD
+    ENCOUNTER_K = 1 # Aggregation parameter of the NBD...
 
     # A set of parameters that determines the
     # probability of encounter given a weighted history of prevalence. The first
@@ -740,7 +740,6 @@ get_simulation_parameters = function(...){
                 MONTH_AT_REPRO=MONTH_AT_REPRO,
                 DISPERSAL_AGE=DISPERSAL_AGE,
                 K_CAPACITY=K_CAPACITY,
-                DI_NEW_BABY_DEATH_RATE=DI_NEW_BABY_DEATH_RATE,
                 BIRTH_RATE=BIRTH_RATE,
                 BETA=BETA,
                 ENCOUNTER_MEAN=ENCOUNTER_MEAN,
