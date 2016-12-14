@@ -12,7 +12,6 @@
 ##
 
 library(parallel)
-
 source("raccoon_fxns.R") # Load in the helper functions
 set.seed(1)
 
@@ -54,136 +53,130 @@ full_simulation = function(cull_params, birth_control_params,
         # If time is >= management time begin management
         if(time >= management_time){
 
-            res = get_cull_indices(cull_params,
+            cull_indices = get_cull_indices(cull_params,
                                          raccoon_dead_alive_array[time - 1, ],
                                          age_array[time - 1, ], 
                                          human_risk_through_time[[time - 1]])
-            cull_indices = res[[1]]
-            pop_indices = res[[2]]
 
             tbirth_control_params = NULL #birth_control_params 
             tworm_control_params = NULL #worm_control_params 
         } else{
             tbirth_control_params = NULL 
             cull_indices = integer(0)
-            pop_indices = integer(0)
             tworm_control_params = NULL 
         }
 
-        print(human_risk_through_time[[time - 1]][cull_indices])
+        #print(human_risk_through_time[[time - 1]][cull_indices])
         #print(age_array[time - 1, cull_indices])
 
-        # Loop through raccoons
-        for(rac in 1:dim(raccoon_worm_array)[2]){
+        # Loop through raccoons BUT ONLY LOOP THROUGH RACCOON THAT ARE ALIVE
+        alive_inds = which(raccoon_dead_alive_array[time - 1, ] == 1)
+        dead_inds = which(raccoon_dead_alive_array[time - 1, ] == 0)
 
-            alive_then = raccoon_dead_alive_array[time - 1, rac]
+        # Keep the deads dead
+        raccoon_worm_array[time, dead_inds] = NA
+        raccoon_dead_alive_array[time, dead_inds] = 0
 
-            if(alive_then == 1){
+        print(length(alive_inds))
+        for(rac in alive_inds){
 
-                # 1. Raccoon dies (Killing at the beginning of the time interval)
+            # 1. Raccoon dies (Killing at the beginning of the time interval)
 
-                age_now = initial_age_vector[rac] +
-                            sum(raccoon_dead_alive_array[, rac], na.rm=T)
+            age_now = initial_age_vector[rac] +
+                        sum(raccoon_dead_alive_array[, rac], na.rm=T)
 
-                overlap_now = human_risk_through_time[[time - 1]][rac]
+            overlap_now = human_risk_through_time[[time - 1]][rac]
 
-                alive_now = kill_my_raccoon(raccoon_worm_array[time - 1, rac],
-                                                age_now, overlap_now, 
-                                                prms$DEATH_THRESHOLD, prms$PATHOGENICITY,
-                                                prms$BABY_DEATH,
-                                                prms$INTRINSIC_DEATH_RATE,
-                                                prms$RANDOM_DEATH_PROB, prms$OLD_DEATH,
-                                                cull=any(rac == cull_indices))
+            alive_now = kill_my_raccoon(raccoon_worm_array[time - 1, rac],
+                                            age_now, overlap_now, 
+                                            prms$DEATH_THRESHOLD, prms$PATHOGENICITY,
+                                            prms$BABY_DEATH,
+                                            prms$INTRINSIC_DEATH_RATE,
+                                            prms$RANDOM_DEATH_PROB, prms$OLD_DEATH,
+                                            cull=any(rac == cull_indices))
 
-                raccoon_dead_alive_array[time, rac] = alive_now
-
-
-                if(alive_now){
-
-                    # 1. Give birth if appropriate
-
-                    age_array[time, rac] = age_now
-
-                    tot_racs = sum(raccoon_dead_alive_array[time, ], na.rm=T)
-                    new_babies_now = give_birth(age_now, time, tot_racs,
-                                                            prms$MONTH_AT_REPRO,
-                                                            prms$FIRST_REPRO_AGE,
-                                                            prms$LITTER_SIZE, prms$BETA,
-                                        birth_control_params=tbirth_control_params)
-
-                    # Add new babies to array to assign human contacts later
-                    babies_at_this_time_vect[rac] = new_babies_now
-                    new_babies = new_babies + new_babies_now
-
-                    # 2. Deposit Eggs (ignoring for now)
-
-                    # 3. Kill old worms for each possible source of worms
-                    got_bait = picked_up_bait(overlap_now, tworm_control_params)
-
-                    for(tw in 1:length(all_worms_infra_array)){
-
-                        previous_cohorts = all_worms_infra_array[[tw]][[rac]][time - 1, 1:(time - 1)]
-                        new_cohort = kill_raccoon_worms(previous_cohorts,
-                                                        prms$WORM_SURV_TRESH,
-                                                        prms$WORM_SURV_SLOPE,
-                                                        got_bait=got_bait)
-
-                        # Assign previous cohort to current cohort
-                        all_worms_infra_array[[tw]][[rac]][time, 1:(time - 1)] = new_cohort
-
-                    }
-
-                    # 4. Pick up eggs or pick up rodents depending on age
-
-                    if(age_now <= prms$AGE_EGG_RESISTANCE){ # Only pick up worms from eggs
-
-                        worms_acquired = pick_up_eggs(prms$ENCOUNTER_MEAN,
-                                                prms$ENCOUNTER_K,
-                                                prms$INFECTIVITY, prms$RESISTANCE,
-                                                previous_prevalence[1:(time - 1)],
-                                                raccoon_worm_array[time - 1, rac],
-                                                prms$EGG_DECAY, prms$ENCOUNTER_PARAMS)
-
-                        all_worms_infra_array[[1]][[rac]][time, time] = worms_acquired
-                        all_worms_infra_array[[2]][[rac]][time, time] = 0
-
-                    } else{ # Only pick up worms from rodent
-                        worms_acquired = pick_up_rodents(prms$MOUSE_WORM_MEAN,
-                                                         prms$MOUSE_WORM_AGG,
-                                                         prms$RODENT_ENCOUNTER_PROB,
-                                                         prms$LARVAL_WORM_INFECTIVITY,
-                                                         previous_prevalence[1:(time - 1)],
-                                                         prms$EGG_DECAY, prms$ENCOUNTER_PARAMS)
-
-                        all_worms_infra_array[[1]][[rac]][time, time] = 0
-                        all_worms_infra_array[[2]][[rac]][time, time] = worms_acquired
-                    }
-
-                    # Sum over all worm sources and add to total raccoon array
-                    raccoon_worm_array[time, rac] = sum(all_worms_infra_array[[1]][[rac]][time, ], na.rm=T) + 
-                                                    sum(all_worms_infra_array[[2]][[rac]][time, ], na.rm=T)
-
-                    # sum(unlist(lapply(all_worms_infra_array, 
-                    #             function(wa) sum(wa[[rac]][time, ], na.rm=T))))
+            raccoon_dead_alive_array[time, rac] = alive_now
 
 
-                    # 5. Disperse if raccoon is 6
-                    if(age_now == prms$DISPERSAL_AGE){
-                        human_array[rac] = assign_human_contacts(1)
-                    }
+            if(alive_now){
 
-                } else { # Raccoon dead and its worms die
-                    raccoon_worm_array[time, rac] = NA
-                    human_array[rac] = NA
+                # 1. Give birth if appropriate
+
+                age_array[time, rac] = age_now
+
+                tot_racs = sum(raccoon_dead_alive_array[time, ], na.rm=T)
+                new_babies_now = give_birth(age_now, time, tot_racs,
+                                                        prms$MONTH_AT_REPRO,
+                                                        prms$FIRST_REPRO_AGE,
+                                                        prms$LITTER_SIZE, prms$BETA,
+                                    birth_control_params=tbirth_control_params)
+
+                # Add new babies to array to assign human contacts later
+                babies_at_this_time_vect[rac] = new_babies_now
+                new_babies = new_babies + new_babies_now
+
+                # 2. Deposit Eggs (ignoring for now)
+
+                # 3. Kill old worms for each possible source of worms
+                got_bait = picked_up_bait(overlap_now, tworm_control_params)
+
+                for(tw in 1:length(all_worms_infra_array)){
+
+                    previous_cohorts = all_worms_infra_array[[tw]][[rac]][time - 1, 1:(time - 1)]
+                    new_cohort = kill_raccoon_worms(previous_cohorts,
+                                                    prms$WORM_SURV_TRESH,
+                                                    prms$WORM_SURV_SLOPE,
+                                                    got_bait=got_bait)
+
+                    # Assign previous cohort to current cohort
+                    all_worms_infra_array[[tw]][[rac]][time, 1:(time - 1)] = new_cohort
+
                 }
 
+                # 4. Pick up eggs or pick up rodents depending on age
 
-            } else{ # This keeps deads dead
+                if(age_now <= prms$AGE_EGG_RESISTANCE){ # Only pick up worms from eggs
 
+                    worms_acquired = pick_up_eggs(prms$ENCOUNTER_MEAN,
+                                            prms$ENCOUNTER_K,
+                                            prms$INFECTIVITY, prms$RESISTANCE,
+                                            previous_prevalence[1:(time - 1)],
+                                            raccoon_worm_array[time - 1, rac],
+                                            prms$EGG_DECAY, prms$ENCOUNTER_PARAMS)
+
+                    all_worms_infra_array[[1]][[rac]][time, time] = worms_acquired
+                    all_worms_infra_array[[2]][[rac]][time, time] = 0
+
+                } else{ # Only pick up worms from rodent
+                    worms_acquired = pick_up_rodents(prms$MOUSE_WORM_MEAN,
+                                                     prms$MOUSE_WORM_AGG,
+                                                     prms$RODENT_ENCOUNTER_PROB,
+                                                     prms$LARVAL_WORM_INFECTIVITY,
+                                                     previous_prevalence[1:(time - 1)],
+                                                     prms$EGG_DECAY, prms$ENCOUNTER_PARAMS)
+
+                    all_worms_infra_array[[1]][[rac]][time, time] = 0
+                    all_worms_infra_array[[2]][[rac]][time, time] = worms_acquired
+                }
+
+                # Sum over all worm sources and add to total raccoon array
+                raccoon_worm_array[time, rac] = sum(all_worms_infra_array[[1]][[rac]][time, ], na.rm=T) + 
+                                                sum(all_worms_infra_array[[2]][[rac]][time, ], na.rm=T)
+
+                # sum(unlist(lapply(all_worms_infra_array, 
+                #             function(wa) sum(wa[[rac]][time, ], na.rm=T))))
+
+
+                # 5. Disperse if raccoon is 6
+                if(age_now == prms$DISPERSAL_AGE){
+                    human_array[rac] = assign_human_contacts(1)
+                }
+
+            } else { # Raccoon dead and its worms die
                 raccoon_worm_array[time, rac] = NA
-                raccoon_dead_alive_array[time, rac] = 0
-
+                human_array[rac] = NA
             }
+
         }
 
 
@@ -224,90 +217,101 @@ full_simulation = function(cull_params, birth_control_params,
                 human_risk_through_time=human_risk_through_time))
 } # End full simulation
 
-## RUNNING SIMULATION ###
 
-cull_params = list(strategy="age", quota=3, overlap_threshold=0.9)
-birth_control_params = NULL #list(strategy="random", distribution=0.9)
-worm_control_params = NULL #list(strategy="random", distribution=0.5)
-management_time = 3
 
-params = get_simulation_parameters(TIME_STEPS=100, K_CAPACITY=40, INIT_NUM_RACCOONS=100) # Load in simulation parameters
-init_arrays = get_init_arrays(params) # Load in init arrays
-all_res = full_simulation(cull_params, birth_control_params, 
+
+
+
+
+run_and_extract_results = function(i, quota, management_time, 
+                                    cull_params, birth_control_params, 
+                                    worm_control_params, time_steps){
+
+    print(paste("Simulation", i, "for quota", quota))
+
+    params = get_simulation_parameters(TIME_STEPS=time_steps) # Load in simulation parameters
+    init_arrays = get_init_arrays(params) # Load in init arrays
+
+    cull_params$quota = quota
+    all_res = full_simulation(cull_params, birth_control_params, 
                                 worm_control_params, management_time,
                                 params, init_arrays)
 
+    # Extract min, max rac pop sizes
+    pop_traj = rowSums(all_res$raccoon_dead_alive_array, na.rm=T)
+    tot_steps = length(pop_traj)
+    max_rac_pop = max(pop_traj[(tot_steps - 12):tot_steps])
+    min_rac_pop = min(pop_traj[(tot_steps - 12):tot_steps])
+    mean_rac_pop = mean(pop_traj[(tot_steps - 12):tot_steps])
+
+    # Extract min, max, worm pop sizes
+    worm_pop_traj = rowSums(all_res$raccoon_worm_array, na.rm=T)
+    max_worm_pop = max(worm_pop_traj[(tot_steps - 12):tot_steps])
+    min_worm_pop = min(worm_pop_traj[(tot_steps - 12):tot_steps])
+    mean_worm_pop = mean(worm_pop_traj[(tot_steps - 12):tot_steps])
+
+    # Human risk 
+    human_risk = get_human_risk_metric(all_res$human_risk_through_time, 
+                          all_res$raccoon_worm_array, 
+                          params$EGG_DECAY)$weighted
+    max_human_risk = max(human_risk[(tot_steps - 12):tot_steps])
+    min_human_risk = min(human_risk[(tot_steps - 12):tot_steps])
+    mean_human_risk = mean(human_risk[(tot_steps - 12):tot_steps])
 
 
+    return(c(min_rac_pop, mean_rac_pop, max_rac_pop, 
+             min_worm_pop, mean_worm_pop, max_worm_pop,
+             min_human_risk, mean_human_risk, max_human_risk))
 
-# params = get_simulation_parameters() # Load in simulation parameters
+}
+
+## RUNNING SIMULATION ###
+
+# Simulation parameters
+cull_params = list(strategy="human", quota=20, overlap_threshold=0.25)
+birth_control_params = NULL #list(strategy="random", distribution=0.9)
+worm_control_params = NULL #list(strategy="random", distribution=0.5)
+
+# params = get_simulation_parameters(TIME_STEPS=300) # Load in simulation parameters
 # init_arrays = get_init_arrays(params) # Load in init arrays
-
-# cull_probs = seq(0, 0.01, len=15)
-# SIMS = 8
-
-
-# run_and_extract_results = function(i, prob){
-
-#     print(paste("Simulation", i, "for prob", prob))
-
-#     params = get_simulation_parameters() # Load in simulation parameters
-#     init_arrays = get_init_arrays(params) # Load in init arrays
-
-#     cull_params$cull_prob = prob
-#     all_res = full_simulation(cull_params, birth_control_params, 
+# all_res = full_simulation(cull_params, birth_control_params, 
 #                                 worm_control_params, management_time,
-#                                 params, init_arrays)
+#                                 params, init_arrays, print_it=TRUE)
 
-#     # Extract min, max rac pop sizes
-#     pop_traj = rowSums(all_res$raccoon_dead_alive_array, na.rm=T)
-#     tot_steps = length(pop_traj)
-#     max_rac_pop = max(pop_traj[(tot_steps - 12):tot_steps])
-#     min_rac_pop = min(pop_traj[(tot_steps - 12):tot_steps])
-#     mean_rac_pop = mean(pop_traj[(tot_steps - 12):tot_steps])
+quotas = 0:10#0:5
+SIMS = 50
+management_time = 100
+time_steps = 200
+col_names = c("min_rac_pop", "mean_rac_pop", "max_rac_pop", 
+             "min_worm_pop", "mean_worm_pop", "max_worm_pop",
+             "min_human_risk", "mean_human_risk", "max_human_risk")
 
-#     # Extract min, max, worm pop sizes
-#     worm_pop_traj = rowSums(all_res$raccoon_worm_array, na.rm=T)
-#     max_worm_pop = max(worm_pop_traj[(tot_steps - 12):tot_steps])
-#     min_worm_pop = min(worm_pop_traj[(tot_steps - 12):tot_steps])
-#     mean_worm_pop = mean(worm_pop_traj[(tot_steps - 12):tot_steps])
-
-#     # Human risk 
-#     human_risk = get_human_risk_metric(all_res$human_risk_through_time, 
-#                           all_res$raccoon_worm_array, 
-#                           params$EGG_DECAY)$weighted
-#     max_human_risk = max(human_risk[(tot_steps - 12):tot_steps])
-#     min_human_risk = min(human_risk[(tot_steps - 12):tot_steps])
-#     mean_human_risk = mean(human_risk[(tot_steps - 12):tot_steps])
+# Arrays to hold sim results
+sim_mean_results = list()
+sim_var_results = list()
 
 
-#     return(c(min_rac_pop, mean_rac_pop, max_rac_pop, 
-#              min_worm_pop, mean_worm_pop, max_worm_pop,
-#              min_human_risk, mean_human_risk, max_human_risk))
-#     # Extract human risk min max
-
-#     # Return all together in list
-
-# }
-
-
-# sim_mean_results = list()
-# sim_var_results = list()
-
-
-
-# for(j in 1:length(cull_probs)){ # Looping through cull_probs
+for(j in 1:length(quotas)){ # Looping through cull_probs
     
-#     # Paralellize within each cull_prob
-#     maxs = mclapply(1:SIMS, run_and_extract_results, cull_probs[j], 
-#                                                             mc.cores=4)
+    # Parallelize within each quota
+    sim_vals = mclapply(1:SIMS, run_and_extract_results, 
+                                        quotas[j], management_time, 
+                                        cull_params, birth_control_params,
+                                        worm_control_params, time_steps, 
+                                        mc.cores=4)
 
-#     cull_prob_matrix = do.call(rbind, maxs)
+    cull_matrix = do.call(rbind, sim_vals)
 
-#     cull_means = colMeans(cull_prob_matrix)
-#     cull_vars = apply(cull_prob_matrix, 2, sd)
-#     sim_mean_results[[j]] = cull_means
-#     sim_var_results[[j]] = cull_vars
+    cull_means = colMeans(cull_matrix)
+    cull_vars = apply(cull_matrix, 2, sd)
+    names(cull_means) = col_names
+    names(cull_vars) = col_names
+    sim_mean_results[[j]] = cull_means
+    sim_var_results[[j]] = cull_vars
 
-# }
+}
 
+saveRDS(sim_mean_results, "sim_mean_results.rds")
+saveRDS(sim_var_results, "sim_var_results.rds")
+
+print("Analysis complete")

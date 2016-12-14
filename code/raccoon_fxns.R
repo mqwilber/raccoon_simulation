@@ -139,7 +139,7 @@ get_cull_indices = function(cull_params, raccoon_dead_alive_vect,
         cull_inds = pop_inds # Empty vector
     }
 
-    return(list(cull_inds, pop_inds))
+    return(cull_inds)
 
 }
 
@@ -676,6 +676,7 @@ get_simulation_parameters = function(...){
     OLD_DEATH = (1 / (20 * 12)^2) # Above 20 years old the raccoon dies
     AGE_EGG_RESISTANCE = 4 # Age above which raccoons no longer pick up eggs
     RODENT_ENCOUNTER_PROB = 0.5 # Monthly probability of encountering a rodent
+    INIT_WORMS = 10 # Initial number of non-rodent worms in raccoons
 
     ## Rodent parameters
     MOUSE_WORM_MEAN = 3.49 # Abundance of worms in peromyscus estimated from Sara's data
@@ -730,6 +731,7 @@ get_simulation_parameters = function(...){
                 OLD_DEATH=OLD_DEATH,
                 AGE_EGG_RESISTANCE=AGE_EGG_RESISTANCE,
                 RODENT_ENCOUNTER_PROB=RODENT_ENCOUNTER_PROB,
+                INIT_WORMS=INIT_WORMS,
                 MOUSE_WORM_MEAN=MOUSE_WORM_MEAN,
                 MOUSE_WORM_AGG=MOUSE_WORM_AGG,
                 LARVAL_WORM_INFECTIVITY=LARVAL_WORM_INFECTIVITY,
@@ -810,7 +812,7 @@ get_init_arrays = function(prms){
 
     # Initialize non-rodent worm array
     for(i in 1:length(infra_nonmouse_worm_array)){
-        infra_nonmouse_worm_array[[i]][1, 1] = 10
+        infra_nonmouse_worm_array[[i]][1, 1] = prms$INIT_WORMS
 
     }
 
