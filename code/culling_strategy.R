@@ -217,11 +217,6 @@ full_simulation = function(cull_params, birth_control_params,
 } # End full simulation
 
 
-
-
-
-
-
 run_and_extract_results = function(i, quota, management_time, 
                                     cull_params, birth_control_params, 
                                     worm_control_params, time_steps){
@@ -268,7 +263,7 @@ run_and_extract_results = function(i, quota, management_time,
 
 
 # Simulation parameters
-cull_params = list(strategy="human", quota=5, overlap_threshold=0.25)
+cull_params = list(strategy="random", quota=5, overlap_threshold=0.25)
 birth_control_params = NULL #list(strategy="random", distribution=0.9)
 worm_control_params = NULL #list(strategy="random", distribution=0.5)
 
@@ -276,7 +271,7 @@ worm_control_params = NULL #list(strategy="random", distribution=0.5)
 quotas = 0:10#0:5
 SIMS = 50
 management_time = 100
-time_steps = 10
+time_steps = 50
 col_names = c("min_rac_pop", "mean_rac_pop", "max_rac_pop", 
              "min_worm_pop", "mean_worm_pop", "max_worm_pop",
              "min_human_risk", "mean_human_risk", "max_human_risk")

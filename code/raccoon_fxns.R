@@ -27,16 +27,13 @@ death_probability = function(load, beta, alpha){
 
     prob_death = 1 - exp(beta + log(load + 1)*alpha) / (1 + exp(beta + log(load + 1)*alpha))
 
-    #prob_death = beta + load * alpha
-
     return(prob_death)
-    #return(0)
 }
 
 intrinsic_death_fxn = function(age, intrinsic_death_rate, baby_death){
 
-    # TODO: REVISIT THIS.  ARE WE DOUBLE COUNTING DEATH
-    return(baby_death * exp(-intrinsic_death_rate * age))
+    # log(age + 1) because this is how we fit the data it fit_params
+    return(baby_death * exp(-intrinsic_death_rate * log(age + 1)))
 }
 
 senescence_fxn = function(age, old_death){
@@ -63,6 +60,7 @@ kill_my_raccoon = function(worm_load, age, overlap, death_thresh, patho, intrins
 
     # Probaility of not dying from worms * not dying from age * not dying
     # from random
+    # Subtrancting
     surv_prob = (1 - death_probability(worm_load, death_thresh, patho)) *
                         (1 - intrinsic_death_fxn(age, intrinsic_death,
                             baby_death)) * (1 - random_death_prob) * 
@@ -228,7 +226,7 @@ give_birth = function(age_now, time, tot_racs,
         if(age_now >= first_repro_age){ # If the age is right
 
             birth_event = birth_control_strategy(birth_control_params)
-            repro_prob = birth_event * exp(-(beta*tot_racs)) # Think about this beta function
+            repro_prob = birth_event * exp(-(beta*tot_racs)) # Ricker function from Encyclopedia of Theoretical Ecology pg 634
             repro = rbinom(1, litter_size, repro_prob)
         }
 
@@ -288,7 +286,7 @@ pick_up_eggs = function(emean, ek, infect, resist, prev, load, egg_decay,
 
     # Encounter and get eggs on face and get infected with eggs
     eprob = get_eprob(prev, egg_decay, eprob_param)
-    # eprob = 1
+
     new_eggs = rbinom(1, 1, eprob) * rbinom(1, rnbinom(1, size=ek, mu=emean), infect_red)
     return(new_eggs)
 
@@ -332,8 +330,6 @@ update_rodent_mean_var = function(prev_vector, egg_decay, eprob_param,
     new_mean = eprob * mouse_worm_mean
 
     # From Shaw and Dobson 1995 TPL
-    # TODO: Change intercept to match empirically observed k/variance value from
-    # rodents.
     logvar = 1.551*log10(new_mean) + 1.098
 
     # Convert to NBD k
@@ -347,7 +343,6 @@ get_eprob = function(prev_vector, egg_decay, eprob_param){
     # Calculating our encounter probability from previous prevalences
 
     # Calculate egg decay probability
-    # TODO: REVIST WEIGHTS SHOULD THIS START AT 0? (i.e. 0:(length(prev_vector) - 1))
     weights = exp(-egg_decay * 1:length(prev_vector))
 
     # Weight the the past infections prevalences and then sum them.
@@ -535,7 +530,7 @@ get_human_risk_metric = function(human_risk_through_time,
 
     for(time in 1:tot_time){
 
-        vals = 0:(time - 1)
+        vals = 1:time
         weights = exp(-egg_decay * vals)
         weighted_hr = sum(unweighted_risk_array[1:time] * weights[time:1])
         weighted_risk_array[time] = weighted_hr
@@ -670,8 +665,11 @@ get_simulation_parameters = function(...){
     #DEATH_PROB = 22 # Natural death
     DEATH_THRESHOLD = 22 #22 # beta in death_probability fxn
     PATHOGENICITY = -4.2 # alpha in death_probability fxn
-    BABY_DEATH = 1 - (.52^(1/7))^4 # Probability of dying as baby
-    INTRINSIC_DEATH_RATE = 0.33 # Age related death rate
+
+    # Probability of dying as baby. 
+    # TODO: Change to fit_param estimated slope
+    BABY_DEATH = exp(-1.2753) # Intercept from fit_param.R #1 - (.52^(1/7))^4
+    INTRINSIC_DEATH_RATE = 0.9049 #0.33 # Age related death rate. TODO: CHANGE TO exp(intercept) of fit param
     RANDOM_DEATH_PROB = 0.01 # Lower bound to death prob
     OLD_DEATH = (1 / (20 * 12)^2) # Above 20 years old the raccoon dies
     AGE_EGG_RESISTANCE = 4 # Age above which raccoons no longer pick up eggs
@@ -696,7 +694,7 @@ get_simulation_parameters = function(...){
                     # version of this model
 
     BIRTH_RATE = log(LITTER_SIZE) # Gives birth rate. Little r in ricker function
-    BETA = BIRTH_RATE / K_CAPACITY # TODO: CHECK WHY I DID THIS?
+    BETA = BIRTH_RATE / K_CAPACITY # From Encylopedia of Theoretical Ecology, pg. 634.
 
     # PARASITE PARAMETERS
     # ENVIRONMENTAL_POOL = 0
