@@ -90,7 +90,6 @@ full_simulation = function(cull_params, birth_control_params,
                                             age_now, overlap_now, 
                                             prms$DEATH_THRESHOLD, prms$PATHOGENICITY,
                                             prms$BABY_DEATH,
-                                            prms$INTRINSIC_DEATH_RATE,
                                             prms$RANDOM_DEATH_PROB, prms$OLD_DEATH,
                                             cull=any(rac == cull_indices))
 
@@ -263,7 +262,7 @@ run_and_extract_results = function(i, quota, management_time,
 
 
 # Simulation parameters
-cull_params = list(strategy="random", quota=5, overlap_threshold=0.25)
+cull_params = list(strategy="random", quota=0, overlap_threshold=0.25)
 birth_control_params = NULL #list(strategy="random", distribution=0.9)
 worm_control_params = NULL #list(strategy="random", distribution=0.5)
 

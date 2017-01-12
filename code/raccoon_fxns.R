@@ -30,10 +30,14 @@ death_probability = function(load, beta, alpha){
     return(prob_death)
 }
 
-intrinsic_death_fxn = function(age, intrinsic_death_rate, baby_death){
+intrinsic_death_fxn = function(age, baby_death){
 
-    # log(age + 1) because this is how we fit the data it fit_params
-    return(baby_death * exp(-intrinsic_death_rate * log(age + 1)))
+    if(age == 0){
+        return(baby_death)
+    } else{
+        return(0) # Don't die due to baby death
+    }
+        
 }
 
 senescence_fxn = function(age, old_death){
@@ -42,7 +46,7 @@ senescence_fxn = function(age, old_death){
     return(prob_sen)
 } 
 
-kill_my_raccoon = function(worm_load, age, overlap, death_thresh, patho, intrinsic_death,
+kill_my_raccoon = function(worm_load, age, overlap, death_thresh, patho,
                                 baby_death, random_death_prob, old_death,
                                 cull=FALSE){
     # Kill raccoon based on worm load and intrinsic mortality
@@ -62,8 +66,8 @@ kill_my_raccoon = function(worm_load, age, overlap, death_thresh, patho, intrins
     # from random
     # Subtrancting
     surv_prob = (1 - death_probability(worm_load, death_thresh, patho)) *
-                        (1 - intrinsic_death_fxn(age, intrinsic_death,
-                            baby_death)) * (1 - random_death_prob) * 
+                        (1 - intrinsic_death_fxn(age, baby_death)) * 
+                            (1 - random_death_prob) * 
                             (1 - senescence_fxn(age, old_death))
                             #(1 - cull_strategy(cull_params, age, overlap))
 
@@ -668,8 +672,8 @@ get_simulation_parameters = function(...){
 
     # Probability of dying as baby. 
     # TODO: Change to fit_param estimated slope
-    BABY_DEATH = exp(-1.2753) # Intercept from fit_param.R #1 - (.52^(1/7))^4
-    INTRINSIC_DEATH_RATE = 0.9049 #0.33 # Age related death rate. TODO: CHANGE TO exp(intercept) of fit param
+    BABY_DEATH = 1 - (.52^(1/7))^4 # From data at age 0 in fit_param.R
+    INTRINSIC_DEATH_RATE = 0.8512 # abs(slope) from fit_param.R.  WE MAY WANT TO REMOVE
     RANDOM_DEATH_PROB = 0.01 # Lower bound to death prob
     OLD_DEATH = (1 / (20 * 12)^2) # Above 20 years old the raccoon dies
     AGE_EGG_RESISTANCE = 4 # Age above which raccoons no longer pick up eggs
@@ -689,7 +693,7 @@ get_simulation_parameters = function(...){
     DISPERSAL_AGE = 12 # months
 
     ## Ricker function for density-dependent recruitment of new babies
-    K_CAPACITY = 150 # "Carrying" capacity for raccoons. Need to figure out what
+    K_CAPACITY = 60 # "Carrying" capacity for raccoons. Need to figure out what
                     # what is determining carrying capacity for the deterministic
                     # version of this model
 
@@ -776,7 +780,7 @@ get_init_arrays = function(prms){
     # Set up the raccoon arrays
 
     raccoon_dead_alive_array = array(NA, dim=c(prms$TIME_STEPS + 1, prms$INIT_NUM_RACCOONS))
-    initial_age_vector = rep(10, prms$INIT_NUM_RACCOONS)
+    initial_age_vector = rep(24, prms$INIT_NUM_RACCOONS)
     age_array = array(NA, dim=c(prms$TIME_STEPS + 1, prms$INIT_NUM_RACCOONS))
     age_array[1, ] = initial_age_vector
     human_array = assign_human_contacts(prms$INIT_NUM_RACCOONS)
