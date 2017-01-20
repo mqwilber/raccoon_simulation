@@ -167,12 +167,12 @@ full_simulation = function(cull_params, birth_control_params,
 
                 # 5. Disperse if raccoon is 6
                 if(age_now == prms$DISPERSAL_AGE){
-                    human_array[rac] = assign_human_contacts(1)
+                    human_vect[rac] = assign_human_contacts(1)
                 }
 
             } else { # Raccoon dead and its worms die
                 raccoon_worm_array[time, rac] = NA
-                human_array[rac] = NA
+                human_vect[rac] = NA
             }
 
         }
@@ -186,7 +186,7 @@ full_simulation = function(cull_params, birth_control_params,
                                                raccoon_dead_alive_array,
                                                raccoon_worm_array,
                                                age_array, all_worms_infra_array,
-                                               human_array,
+                                               human_vect,
                                                babies_at_this_time_vect,
                                                prms$TIME_STEPS)
 
@@ -196,12 +196,16 @@ full_simulation = function(cull_params, birth_control_params,
             raccoon_dead_alive_array = updated_arrays$raccoon_dead_alive_array
             raccoon_worm_array = updated_arrays$raccoon_worm_array
             all_worms_infra_array = updated_arrays$all_worms_infra_array
-            human_array = updated_arrays$human_array
+            human_vect = updated_arrays$human_vect
 
         }
 
         # Save the new human risk array
-        human_risk_through_time[[time]] = human_array
+        human_risk_through_time[[time]] = human_vect
+        eggproduction_array[time, ] = assign_egg_production(
+                                            raccoon_worm_array[time, ],
+                                            human_vect,
+                                            prms$ZONES)
 
     }
 
@@ -211,8 +215,9 @@ full_simulation = function(cull_params, birth_control_params,
                 raccoon_dead_alive_array=raccoon_dead_alive_array,
                 raccoon_worm_array=raccoon_worm_array,
                 all_worms_infra_array=all_worms_infra_array,
-                human_array=human_array,
-                human_risk_through_time=human_risk_through_time))
+                human_vect=human_vect,
+                human_risk_through_time=human_risk_through_time,
+                eggproduction_array=eggproduction_array))
 } # End full simulation
 
 

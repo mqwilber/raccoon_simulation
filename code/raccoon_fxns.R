@@ -375,12 +375,46 @@ assign_human_contacts = function(num_racs){
     return(runif(num_racs))
 }
 
+assign_egg_production = function(raccoon_worm_vect, human_vect, zones){
+    # From the raccoon worm array vector at time t and the human array
+    # vector at time t, assign the egg production per zone
+
+    # Group raccoons by zones
+    breaks = seq(0, 1, len=zones + 1)
+    zone_labels = cut(human_vect, breaks)
+    levels(zone_labels) = 1:zones
+
+    # Calc. number infected in each zone, dropping NAs
+    dt = data.table(zone_num=zone_labels, pa=(raccoon_worm_vect > 0))
+    grouped_data = dt[!is.na(zone_num), list(pa_sums=sum(pa)), by=c("zone_num")]
+
+    missing_labels = setdiff(1:zones, grouped_data$zone_num)
+
+    # Only do this is we are not missing any labels
+    if(length(missing_labels) != 0){
+
+        dt_missing = data.table(zone_num=missing_labels, pa_sums=0)
+        grouped_data = rbind(grouped_data, dt_missing)
+
+    }
+
+    grouped_data = grouped_data[order(zone_num), ]
+
+    return(grouped_data$pa_sums)
+
+}
+
+get_cumulative_egg_load = function(time, eggproduction_array, egg_decay){
+    # Empty function for getting time-dependent cumulative egg production per zone
+    
+}
+
 update_arrays = function(time, new_babies, new_babies_vect,
                                            initial_age_vector,
                                            raccoon_dead_alive_array,
                                            raccoon_worm_array,
                                            age_array, all_worms_infra_array,
-                                           human_array,
+                                           human_vect,
                                            babies_at_this_time_vect,
                                            time_steps){
 
@@ -410,7 +444,7 @@ update_arrays = function(time, new_babies, new_babies_vect,
     # Add new babies behaviors onto human array. Only for the mothers that
     # are alive (i.e. not NAs)
     ind = !is.na(babies_at_this_time_vect)
-    human_array = c(human_array, rep(human_array[ind],
+    human_vect = c(human_vect, rep(human_vect[ind],
                                     babies_at_this_time_vect[ind]))
 
     raccoon_dead_alive_array = cbind(raccoon_dead_alive_array,
@@ -438,7 +472,7 @@ update_arrays = function(time, new_babies, new_babies_vect,
                 raccoon_dead_alive_array=raccoon_dead_alive_array,
                 raccoon_worm_array=raccoon_worm_array,
                 all_worms_infra_array=all_worms_infra_array,
-                human_array=human_array))
+                human_vect=human_vect))
 
 }
 
@@ -724,6 +758,9 @@ get_simulation_parameters = function(...){
     # Time parameters: Each time step is a month
     TIME_STEPS = 100
 
+    # How many discrete zones in our egg zone array
+    ZONES = 10
+
     params=list(INIT_NUM_RACCOONS=INIT_NUM_RACCOONS,
                 DEATH_THRESHOLD=DEATH_THRESHOLD,
                 PATHOGENICITY=PATHOGENICITY,
@@ -752,7 +789,8 @@ get_simulation_parameters = function(...){
                 EGG_DECAY=EGG_DECAY,
                 WORM_SURV_TRESH=WORM_SURV_TRESH,
                 WORM_SURV_SLOPE=WORM_SURV_SLOPE,
-                TIME_STEPS=TIME_STEPS)
+                TIME_STEPS=TIME_STEPS,
+                ZONES=ZONES)
 
     new_params = list(...)
 
@@ -783,9 +821,11 @@ get_init_arrays = function(prms){
     initial_age_vector = rep(24, prms$INIT_NUM_RACCOONS)
     age_array = array(NA, dim=c(prms$TIME_STEPS + 1, prms$INIT_NUM_RACCOONS))
     age_array[1, ] = initial_age_vector
-    human_array = assign_human_contacts(prms$INIT_NUM_RACCOONS)
+    human_vect = assign_human_contacts(prms$INIT_NUM_RACCOONS)
     human_risk_through_time = list()
-    human_risk_through_time[[1]] = human_array
+    human_risk_through_time[[1]] = human_vect
+    eggproduction_array = array(NA, dim=c(prms$TIME_STEPS + 1, prms$ZONES))
+
 
 
     new_babies_vect = array(NA, dim=prms$TIME_STEPS + 1)
@@ -829,17 +869,21 @@ get_init_arrays = function(prms){
     # infra_worm_array = combine_worm_arrays(all_worms_infra_array, raccoon_dead_alive_array)
     raccoon_worm_array = get_tot_worm_array_from_infra(infra_nonmouse_worm_array, raccoon_dead_alive_array) 
 
+    # Assign the initial egg production
+    eggproduction_array[1, ] = assign_egg_production(raccoon_worm_array[1, ], 
+                                        human_vect, prms$ZONES)
 
     init_arrays = list(raccoon_dead_alive_array=raccoon_dead_alive_array,
                        initial_age_vector=initial_age_vector,
                        age_array=age_array,
-                       human_array=human_array,
+                       human_vect=human_vect,
                        human_risk_through_time=human_risk_through_time,
                        new_babies_vect=new_babies_vect,
                        infra_mouse_worm_array=infra_mouse_worm_array,
                        infra_nonmouse_worm_array=infra_nonmouse_worm_array,
                        all_worms_infra_array=all_worms_infra_array,
-                       raccoon_worm_array=raccoon_worm_array)
+                       raccoon_worm_array=raccoon_worm_array,
+                       eggproduction_array=eggproduction_array)
 
     return(init_arrays)
 }
