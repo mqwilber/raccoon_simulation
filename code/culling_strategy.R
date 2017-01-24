@@ -48,7 +48,9 @@ full_simulation = function(cull_params, birth_control_params,
 
         new_babies = 0
         babies_at_this_time_vect = array(NA, dim=dim(raccoon_worm_array)[2])
-        previous_prevalence = get_prevalence(raccoon_worm_array)
+
+        eggs_remaining = get_cumulative_egg_load(time - 1, eggproduction_array, 
+                                            prms$EGG_DECAY)
 
         # If time is >= management time begin management
         if(time >= management_time){
@@ -66,9 +68,6 @@ full_simulation = function(cull_params, birth_control_params,
             tworm_control_params = NULL 
         }
 
-        #print(human_risk_through_time[[time - 1]][cull_indices])
-        #print(age_array[time - 1, cull_indices])
-
         # Loop through raccoons BUT ONLY LOOP THROUGH RACCOON THAT ARE ALIVE
         alive_inds = which(raccoon_dead_alive_array[time - 1, ] == 1)
         dead_inds = which(raccoon_dead_alive_array[time - 1, ] == 0)
@@ -84,7 +83,9 @@ full_simulation = function(cull_params, birth_control_params,
             age_now = initial_age_vector[rac] +
                         sum(raccoon_dead_alive_array[, rac], na.rm=T)
 
+            # Get overlap and raccoon zones
             overlap_now = human_risk_through_time[[time - 1]][rac]
+            zone_now = get_raccoon_zone(overlap_now, prms$ZONES)
 
             alive_now = kill_my_raccoon(raccoon_worm_array[time - 1, rac],
                                             age_now, overlap_now, 
@@ -138,9 +139,9 @@ full_simulation = function(cull_params, birth_control_params,
                     worms_acquired = pick_up_eggs(prms$ENCOUNTER_MEAN,
                                             prms$ENCOUNTER_K,
                                             prms$INFECTIVITY, prms$RESISTANCE,
-                                            previous_prevalence[1:(time - 1)],
+                                            eggs_remaining[zone_now],
                                             raccoon_worm_array[time - 1, rac],
-                                            prms$EGG_DECAY, prms$ENCOUNTER_PARAMS)
+                                            prms$EGG_CONTACT)
 
                     all_worms_infra_array[[1]][[rac]][time, time] = worms_acquired
                     all_worms_infra_array[[2]][[rac]][time, time] = 0
@@ -150,8 +151,8 @@ full_simulation = function(cull_params, birth_control_params,
                                                      prms$MOUSE_WORM_AGG,
                                                      prms$RODENT_ENCOUNTER_PROB,
                                                      prms$LARVAL_WORM_INFECTIVITY,
-                                                     previous_prevalence[1:(time - 1)],
-                                                     prms$EGG_DECAY, prms$ENCOUNTER_PARAMS)
+                                                     eggs_remaining[zone_now],
+                                                     prms$EGG_CONTACT)
 
                     all_worms_infra_array[[1]][[rac]][time, time] = 0
                     all_worms_infra_array[[2]][[rac]][time, time] = worms_acquired
@@ -248,7 +249,7 @@ run_and_extract_results = function(i, quota, management_time,
     min_worm_pop = min(worm_pop_traj[(tot_steps - 12):tot_steps])
     mean_worm_pop = mean(worm_pop_traj[(tot_steps - 12):tot_steps])
 
-    # Human risk 
+    # Human risk # UPDATE THIS
     human_risk = get_human_risk_metric(all_res$human_risk_through_time, 
                           all_res$raccoon_worm_array, 
                           params$EGG_DECAY)$weighted
@@ -273,9 +274,9 @@ worm_control_params = NULL #list(strategy="random", distribution=0.5)
 
 
 quotas = 0:10#0:5
-SIMS = 50
-management_time = 100
-time_steps = 50
+SIMS = 150
+management_time = 200
+time_steps = 200
 col_names = c("min_rac_pop", "mean_rac_pop", "max_rac_pop", 
              "min_worm_pop", "mean_worm_pop", "max_worm_pop",
              "min_human_risk", "mean_human_risk", "max_human_risk")

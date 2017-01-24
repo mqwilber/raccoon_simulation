@@ -272,24 +272,23 @@ birth_control_strategy = function(birth_control_params){
 
 
 
-pick_up_eggs = function(emean, ek, infect, resist, prev, load, egg_decay,
-                            eprob_param){
+pick_up_eggs = function(emean, ek, infect, resist, eggs_environ, load,
+                            egg_contact_param){
     # Function to pick up eggs. Depends on eprob (encounter_probability),
     # emean (mean number of eggs contacted),
     # ek: negative binomial k
     # infect: infectivity
     # resist: Acquired immunity
     # load: worm load at time t - 1 for a given rac
-    # prev: Prevalence of worms in pop for all past time points
-    # egg_decay: Egg decay rate
-    # eprob_param: parameter for determining encounter probability
+    # eggs_environ: Zone-dependent eggs in environment
+    # egg_contact_param: parameter for determining encounter probability
 
 
     # Exponential decline of infectivity.
     infect_red = infect * exp(-resist * load)
 
     # Encounter and get eggs on face and get infected with eggs
-    eprob = get_eprob(prev, egg_decay, eprob_param)
+    eprob = get_eprob(eggs_environ, egg_contact_param)
 
     new_eggs = rbinom(1, 1, eprob) * rbinom(1, rnbinom(1, size=ek, mu=emean), infect_red)
     return(new_eggs)
@@ -298,7 +297,7 @@ pick_up_eggs = function(emean, ek, infect, resist, prev, load, egg_decay,
 
 pick_up_rodents = function(mouse_worm_mean, mouse_worm_agg, 
                         rodent_encounter_prob, larval_worm_infectivity,
-                        prev_vector, egg_decay, eprob_param){
+                        eggs_environ, egg_contact_param){
     # Function to pick up rodents from rodent pool.  Rodent 
     # encounters worm, picks up worms from a negative binomial, and 
     # then worms establish with some prob
@@ -313,7 +312,7 @@ pick_up_rodents = function(mouse_worm_mean, mouse_worm_agg,
     # : number of larval worms acquired
 
     # Update rodent mean and variance
-    mouse_mean_k = update_rodent_mean_var(prev_vector, egg_decay, eprob_param, 
+    mouse_mean_k = update_rodent_mean_var(eggs_environ, egg_contact_param, 
                                 mouse_worm_mean, mouse_worm_agg)
 
     larval_worms = rnbinom(1, mu=mouse_mean_k$mean, size=mouse_mean_k$k) # Larval worms per mouse
@@ -326,10 +325,10 @@ pick_up_rodents = function(mouse_worm_mean, mouse_worm_agg,
 
 }
 
-update_rodent_mean_var = function(prev_vector, egg_decay, eprob_param, 
+update_rodent_mean_var = function(eggs_environ, egg_contact_param, 
                                 mouse_worm_mean, mouse_worm_agg){
 
-    eprob = get_eprob(prev_vector, egg_decay, eprob_param)
+    eprob = get_eprob(eggs_environ, egg_contact_param)
 
     new_mean = eprob * mouse_worm_mean
 
@@ -343,36 +342,30 @@ update_rodent_mean_var = function(prev_vector, egg_decay, eprob_param,
 
 }
 
-get_eprob = function(prev_vector, egg_decay, eprob_param){
+get_eprob = function(eggs_environ, egg_contact_param){
     # Calculating our encounter probability from previous prevalences
 
-    # Calculate egg decay probability
-    weights = exp(-egg_decay * 1:length(prev_vector))
-
-    # Weight the the past infections prevalences and then sum them.
-    # In general, when this metric is 1 or above we'd expect a high
-    # probability of encounter probability
-    adjusted_prev = weights[length(prev_vector):1] * prev_vector
-    metric = sum(adjusted_prev)
-
-    # if there is no past infection eprob = 0
-    if(metric == 0){
-        return(0)
-    } else{ # The metric is not zero, it determines infection prob
-            # according to a logistic function.
-
-        metric = log(metric)
-        eprob = exp(eprob_param[1] + eprob_param[2] * metric) /
-                        (1 + exp(eprob_param[1] + eprob_param[2] * metric))
-        return(eprob)
-    }
-
+    log_eggs_environ = log10(eggs_environ + 1)
+    eprob = 1 - exp(-egg_contact_param * log_eggs_environ)
+    return(eprob)
 
 }
 
 assign_human_contacts = function(num_racs){
     # Assign probabilities of human contacts
     return(runif(num_racs))
+}
+
+get_raccoon_zone = function(overlap, zones){
+    # Get the raccoon zone based on overlap threshold
+
+    # Group raccoons by zones
+    breaks = seq(0, 1, len=zones + 1)
+    zone_labels = cut(overlap, breaks)
+    levels(zone_labels) = 1:zones
+
+    return(zone_labels)
+
 }
 
 assign_egg_production = function(raccoon_worm_vect, human_vect, zones){
@@ -405,8 +398,32 @@ assign_egg_production = function(raccoon_worm_vect, human_vect, zones){
 }
 
 get_cumulative_egg_load = function(time, eggproduction_array, egg_decay){
-    # Empty function for getting time-dependent cumulative egg production per zone
-    
+    # Getting time-dependent cumulative egg production per zone
+    # 
+    # Parameters
+    # ----------
+    # time : int, time
+    # eggproduction_array : array, the num infected raccoons in each zone by time
+    #       dim = (time, zones)
+    # egg_decay: float, parameter specifying egg decay rate
+    #
+    # Returns
+    # -------
+    # : vector
+    #       Vector with the remaining cumulative egg load across zones at time
+    #       Has length == zones.
+
+
+    weights = exp(-egg_decay * time:1)
+
+    if(time == 1){
+        eggs_remaining_vector = eggproduction_array[1:time, ] * weights
+    } else{
+        eggs_remaining_vector = apply(eggproduction_array[1:time, ], 2, 
+                                                function(x) sum(x*weights))
+    }
+    return(eggs_remaining_vector)
+ 
 }
 
 update_arrays = function(time, new_babies, new_babies_vect,
@@ -533,9 +550,7 @@ get_tot_worm_array_from_infra = function(infra_worm_array, raccoon_dead_alive_ar
 
 }
 
-get_human_risk_metric = function(human_risk_through_time,
-                                        raccoon_worm_array,
-                                        egg_decay){
+get_human_risk_metric = function(eggproduction_array, egg_decay){
     # Calculating the human risk metric through time
     # This is using a weighted measure of human risk based on the past
     # worm loads in the population
@@ -547,36 +562,22 @@ get_human_risk_metric = function(human_risk_through_time,
     # egg_decay: parameter determining egg decay rate in the environment
 
     # Number of raccoons at end of simulation
-    tot_rac = length(human_risk_through_time[[length(human_risk_through_time)]])
 
-    # Function to grow all arrays to same size
-    growth_array = function(x, size){
-        num_grow = size - length(x)
-        return(c(x, array(NA, dim=num_grow)))
+    full_time = nrow(eggproduction_array)
+    zones = ncol(eggproduction_array)
+
+    eggs_remaining = array(NA, dim=c(full_time, zones))
+
+    for(time in 1:full_time){
+        eggs_remaining[time, ] = get_cumulative_egg_load(time, eggproduction_array, 
+                                        egg_decay)
     }
 
-    # Matrix of humans risks
-    new_risk = lapply(human_risk_through_time, growth_array, tot_rac)
-    new_risk = do.call(rbind, new_risk)
+    # Calculate human risk through time
+    human_overlap = seq(0, 1, len=zones + 1)[2:(zones + 1)]
+    human_risk = apply(eggs_remaining, 1, function(x) sum(x*human_overlap))
 
-    tot_time = length(human_risk_through_time)
-
-    overlap_array = raccoon_worm_array * new_risk
-    unweighted_risk_array = rowSums(overlap_array, na.rm=T)
-
-    weighted_risk_array = array(NA, dim=length(unweighted_risk_array))
-
-    for(time in 1:tot_time){
-
-        vals = 1:time
-        weights = exp(-egg_decay * vals)
-        weighted_hr = sum(unweighted_risk_array[1:time] * weights[time:1])
-        weighted_risk_array[time] = weighted_hr
-
-    }
-
-    return(list(weighted=weighted_risk_array, unweighted=unweighted_risk_array))
-
+    return(human_risk)
 }
 
 ## Summary functions ##
@@ -745,7 +746,7 @@ get_simulation_parameters = function(...){
     # parameter dictates at what level of the log metric eprob is close to 1 and
     # the second parameter dictates how quickly eprob goes to 1.
     # TODO: WE WILL NEED TO FIDDLE WITH THESE
-    ENCOUNTER_PARAMS = c(2, 5)
+    EGG_CONTACT = 3 # FIDDLE WITH THIS, probably between 2-4.
 
     INFECTIVITY = 0.02 # Probability of infectivity
     RESISTANCE = 0.03 # How quickly a raccoon gains resistance based on previous load
@@ -783,7 +784,7 @@ get_simulation_parameters = function(...){
                 BETA=BETA,
                 ENCOUNTER_MEAN=ENCOUNTER_MEAN,
                 ENCOUNTER_K=ENCOUNTER_K,
-                ENCOUNTER_PARAMS=ENCOUNTER_PARAMS,
+                EGG_CONTACT=EGG_CONTACT,
                 INFECTIVITY=INFECTIVITY,
                 RESISTANCE=RESISTANCE,
                 EGG_DECAY=EGG_DECAY,
