@@ -22,15 +22,22 @@ death_probability = function(load, beta, alpha){
     # : float
     #    Probability of death
 
-    # TODO: IF LOAD IS 0 THROW AN ERROR.
-
-
     prob_death = 1 - exp(beta + log(load + 1)*alpha) / (1 + exp(beta + log(load + 1)*alpha))
 
     return(prob_death)
 }
 
-intrinsic_death_fxn = function(age, baby_death){
+baby_death_fxn = function(age, baby_death){
+    # Gives the probability of dying in the first month of life
+    #
+    # Parameters
+    # ----------
+    # age : int, age of raccoon
+    # baby_death : float, probability of dying at age 0
+    #
+    # Returns
+    # --------
+    # : float, probability of death 
 
     if(age == 0){
         return(baby_death)
@@ -42,6 +49,16 @@ intrinsic_death_fxn = function(age, baby_death){
 
 senescence_fxn = function(age, old_death){
     # Probability of dying of old age
+    # 
+    # Parameters
+    # ----------
+    # age : int, age of raccoon
+    # old_death: float, dictates how quickly death prob. increases with age
+    #
+    # Returns
+    # -------
+    # : float, probability of dying of old age
+
     prob_sen = min(c(1, old_death * age^2))
     return(prob_sen)
 } 
@@ -57,19 +74,21 @@ kill_my_raccoon = function(worm_load, age, overlap, death_thresh, patho,
     # age : int, age of given raccoon
     # overlap : float, between 0 and 1. Human overlap of a given raccoon 
     #            where 1 is high overlap
-    # ... : parameters defined in `raccoon_parameters.R`
-    # cull: bool, TRUE = cull raccoon, FALSE = don't kill
+    # ... : parameters defined in `get_simulation_parameters`
+    # cull: bool, TRUE = cull raccoon, FALSE = don't cull
+    #
+    # Returns
+    # -------
+    # : int, 0/FALSE (dead) or 1/TRUE (alive)
 
     tr = runif(1)
 
-    # Probaility of not dying from worms * not dying from age * not dying
-    # from random
-    # Subtrancting
+    # Probability of not dying from worms * not dying from baby death * 
+    # not dying from old age * not dying from random death
     surv_prob = (1 - death_probability(worm_load, death_thresh, patho)) *
-                        (1 - intrinsic_death_fxn(age, baby_death)) * 
+                        (1 - baby_death_fxn(age, baby_death)) * 
                             (1 - random_death_prob) * 
                             (1 - senescence_fxn(age, old_death))
-                            #(1 - cull_strategy(cull_params, age, overlap))
 
     alive_now = (tr > (1 - surv_prob)) * (!cull)
 
@@ -78,15 +97,15 @@ kill_my_raccoon = function(worm_load, age, overlap, death_thresh, patho,
 }
 
 get_cull_indices = function(cull_params, raccoon_dead_alive_vect, 
-                                age_vect, human_risk_through_time_vect){
+                                age_vect, human_overlap_through_time_vect){
     # Function for updating cull_params each time step to get per capita
     # raccoon survival prob based on quota of raccoon to kill each time point
     # 
     # Possible strategies are:
     # 1. `random`: Cull everybody equally
-    #   - Additional parameters: `cull_prob`: probability of being culled
+    #   - Additional parameters: `quota`: Number of raccoons to kill per time step
     # 2. `age`: Only cull juveniles i.e. less than a year old
-    #   - Additional parameters: `cull_prob`: probability of being culled
+    #   - Additional parameters: `quota`: Number of raccoons to kill per time step
     # 3. `human`: Only cull individuals with a human overlap greater than 
     #              `overlap_threshold`
     #   - Additional parameters: `quota`: absolute number of raccoons to kill
@@ -100,7 +119,7 @@ get_cull_indices = function(cull_params, raccoon_dead_alive_vect,
     #      are dead or alive at time t - 1 
     # age_vect : vector, specifying the ages of alive raccoons at year time
     #                   t - 1
-    # human_risk_through_time_vect: vector, specifies the human overlap value
+    # human_overlap_through_time_vect: vector, specifies the human overlap value
     #                   of alive raccoons at time t - 1.
     # Returns
     # --------
@@ -114,11 +133,13 @@ get_cull_indices = function(cull_params, raccoon_dead_alive_vect,
 
     if(cull_params$strategy == "random"){
 
+        # Only choosing currently alive raccoons to cull
         pop_inds = which((raccoon_dead_alive_vect != 0) & 
                                         (!is.na(raccoon_dead_alive_vect)))
 
     } else if(cull_params$strategy == "age"){
 
+        # Only choosing alive juveniles (< 12 months)
         pop_inds = which((age_vect < 12) & (!is.na(age_vect)))
       
     } else if(cull_params$strategy == "human"){
@@ -127,16 +148,21 @@ get_cull_indices = function(cull_params, raccoon_dead_alive_vect,
             stop("Provide overlap_threshold")
         }
 
-        pop_inds = which(human_risk_through_time_vect > cull_params$overlap_threshold)
+        # NOTE: Using a continuous overlap with discrete zones. Probably should
+        # chose overlap_threshold at 0.0, 0.1, 0.2 ... 0.9.
+        pop_inds = which(human_overlap_through_time_vect > cull_params$overlap_threshold)
 
     } else{
         stop(paste(cull_params$strategy, "is not a recognized strategy. Try random, age, or human"))
     }
 
 
-    # Check if there are any raccoons to cull.  Only cull quota or pop_inds
+    # Check if there are any raccoons to cull.
     if(length(pop_inds) > 1){
+
+        # Cull either quota or how ever many individuals are there < quota. 
         cull_inds = sample(pop_inds, min(c(length(pop_inds), cull_params$quota)))
+
     } else{
         cull_inds = pop_inds # Empty vector
     }
@@ -151,6 +177,16 @@ kill_raccoon_worms = function(previous_cohorts, death_thresh, death_slope,
     # Function to kill worms in raccoon based on worm age
     # Assuming a logistic function of survival prob of worms with cohort
     # age and then killing the worms based on a draw from a binomial
+    #
+    # Parameters
+    # ----------
+    # previous_cohorts : vector, worms in raccoon at time - 1 time points
+    # death_thresh, death_slope : see `get_simulation_parameters`
+    # got_bait : int, 0 or 1.  If raccoon gets bait worms are dead
+    #
+    # Return
+    # ------
+    # : vector, updated cohorts based on dying worms
 
     updated_cohort = previous_cohorts
     non_na_ind = !is.na(previous_cohorts) # get non-nas
@@ -169,6 +205,7 @@ kill_raccoon_worms = function(previous_cohorts, death_thresh, death_slope,
 
 }
 
+# TODO: Revisit this after culling works
 picked_up_bait = function(overlap, worm_control_params=NULL){
     # Function which determines whether or not a raccoon picks up 
     # anti-helminthic bait. worm_control_params is a list that contains the 
@@ -221,9 +258,22 @@ give_birth = function(age_now, time, tot_racs,
                         first_repro_age, litter_size, beta,
                         birth_control_params=NULL){
     # Decide how many babies are produced by a raccoon. Check if the month
-    # is right and if the raccoon is old enough. Then chose the
+    # is right and if the raccoon is old enough.
+    #
+    # Parameters
+    # ----------
+    # age_now : int, age of raccoon in months
+    # time : int, current time
+    # tot_racs : int, total number of raccoons in population
+    # month_at_repro, first_repro_age, litter_size, beta: see `get_simulation_parameters`
+    # birth_control_params : list, TODO: Revisit after culling is working
+    #
+    # Returns
+    # -------
+    # : int, how many babies are produced
 
-    repro = 0
+
+    repro = 0 # No reproduction if below conditions aren't met
 
     if(time %% month_at_repro == 0){ # If the month is right
 
@@ -240,6 +290,7 @@ give_birth = function(age_now, time, tot_racs,
 
 }
 
+# TODO: Revist this after culling is working
 birth_control_strategy = function(birth_control_params){
     # Strategies for birth control. `birth_control_params` must have the 
     # name `strategy` which specifies which birth control strategy to use.
@@ -274,14 +325,17 @@ birth_control_strategy = function(birth_control_params){
 
 pick_up_eggs = function(emean, ek, infect, resist, eggs_environ, load,
                             egg_contact_param){
-    # Function to pick up eggs. Depends on eprob (encounter_probability),
-    # emean (mean number of eggs contacted),
-    # ek: negative binomial k
-    # infect: infectivity
-    # resist: Acquired immunity
-    # load: worm load at time t - 1 for a given rac
-    # eggs_environ: Zone-dependent eggs in environment
-    # egg_contact_param: parameter for determining encounter probability
+    # Function for juvenile raccoons to pick up eggs
+    #
+    # Parameters
+    # -----------
+    # emean, ek, infect, resist, egg_contact_param : see `get_simulation_parameters`
+    # load: int, worm load at time t - 1 for a given raccoon
+    # eggs_environ: float, zone-dependent eggs in environment
+    #
+    # Returns
+    # -------
+    # : int, number of new eggs/worms acquired
 
 
     # Exponential decline of infectivity.
@@ -295,27 +349,28 @@ pick_up_eggs = function(emean, ek, infect, resist, eggs_environ, load,
 
 }
 
-pick_up_rodents = function(mouse_worm_mean, mouse_worm_agg, 
+pick_up_rodents = function(mouse_worm_mean, 
                         rodent_encounter_prob, larval_worm_infectivity,
                         eggs_environ, egg_contact_param){
     # Function to pick up rodents from rodent pool.  Rodent 
     # encounters worm, picks up worms from a negative binomial, and 
     # then worms establish with some prob
     #
-    # mouse_worm_mean : mean number of larval worms acquired
-    # mouse_worm_agg : aggregation of larval worms
-    # rodent_encounter_prob : probability of raccoon encountering rodent
-    # larval_worm_infectivity : Probability of larval worm establishing
+    # Parameters
+    # ----------
+    # mouse_worm_mean, larval_worm_infectivity
+    #       egg_contact_param, rodent_encounter_prob : see `get_simulation_parameters`
+    # eggs_environ: float, zone-dependent eggs in environment
     #
     # Returns
     # -------
     # : number of larval worms acquired
 
     # Update rodent mean and variance
-    mouse_mean_k = update_rodent_mean_var(eggs_environ, egg_contact_param, 
-                                mouse_worm_mean, mouse_worm_agg)
+    mouse_mean_and_k = update_rodent_mean_var(eggs_environ, egg_contact_param, 
+                                mouse_worm_mean)
 
-    larval_worms = rnbinom(1, mu=mouse_mean_k$mean, size=mouse_mean_k$k) # Larval worms per mouse
+    larval_worms = rnbinom(1, mu=mouse_mean_and_k$mean, size=mouse_mean_and_k$k) # Larval worms per mouse
 
 
     new_worms = rbinom(1, 1, rodent_encounter_prob) * # Encounter with mice
@@ -326,7 +381,19 @@ pick_up_rodents = function(mouse_worm_mean, mouse_worm_agg,
 }
 
 update_rodent_mean_var = function(eggs_environ, egg_contact_param, 
-                                mouse_worm_mean, mouse_worm_agg){
+                                mouse_worm_mean){
+    # Function for updating rodent worm mean and rodent worm aggregation
+    # based on environmental egg load. Using a base empirical mean rodent
+    # worm load. 
+    #
+    # Parameters
+    # ----------
+    # eggs_environ: float, zone-dependent eggs in environment
+    # egg_contact_param, mouse_worm_mean : see `get_simulation_parameters`
+    #
+    # Return
+    # ------
+    # : list, updated mean and k based on environmental egg load in a zone
 
     eprob = get_eprob(eggs_environ, egg_contact_param)
 
@@ -344,6 +411,15 @@ update_rodent_mean_var = function(eggs_environ, egg_contact_param,
 
 get_eprob = function(eggs_environ, egg_contact_param){
     # Calculating our encounter probability from previous prevalences
+    #    
+    # Parameters
+    # ----------
+    # eggs_environ: float, zone-dependent eggs in environment
+    # egg_contact_param: see `get_simulation_parameters`
+    #
+    # Return
+    # ------
+    # : float, encounter probability
 
     log_eggs_environ = log10(eggs_environ + 1)
     eprob = 1 - exp(-egg_contact_param * log_eggs_environ)
@@ -357,25 +433,36 @@ assign_human_contacts = function(num_racs){
 }
 
 get_raccoon_zone = function(overlap, zones){
-    # Get the raccoon zone based on overlap threshold
+    # Converts continuous raccoon overlap into discrete zone label 
+    #
+    # Parameters
+    # ----------
+    # overlap : vector or float, overlap of raccoon(s)
+    # zones : int, number of zones
+    #
+    # Returns
+    # -------
+    # : vector or int, the zone corresponding to continuous parameter overlap
 
     # Group raccoons by zones
     breaks = seq(0, 1, len=zones + 1)
-    zone_labels = cut(overlap, breaks)
-    levels(zone_labels) = 1:zones
+    zone_labels = .bincode(overlap, breaks)
 
     return(zone_labels)
 
 }
 
+## START CODE REVIEW HERE ##
+
 assign_egg_production = function(raccoon_worm_vect, human_vect, zones){
     # From the raccoon worm array vector at time t and the human array
     # vector at time t, assign the egg production per zone
+    #
+    #
 
     # Group raccoons by zones
     breaks = seq(0, 1, len=zones + 1)
-    zone_labels = cut(human_vect, breaks)
-    levels(zone_labels) = 1:zones
+    zone_labels = .bincode(human_vect, breaks)
 
     # Calc. number infected in each zone, dropping NAs
     dt = data.table(zone_num=zone_labels, pa=(raccoon_worm_vect > 0))
@@ -556,7 +643,7 @@ get_human_risk_metric = function(eggproduction_array, egg_decay){
     # worm loads in the population
     #
     # Parameters
-    # human_risk_through_time: list containing the vectors that have human
+    # human_overlap_through_time: list containing the vectors that have human
     #                           risks for each raccoon
     # raccoon_worm_array: Raccoon worm array
     # egg_decay: parameter determining egg decay rate in the environment
@@ -706,7 +793,6 @@ get_simulation_parameters = function(...){
     PATHOGENICITY = -4.2 # alpha in death_probability fxn
 
     # Probability of dying as baby. 
-    # TODO: Change to fit_param estimated slope
     BABY_DEATH = 1 - (.52^(1/7))^4 # From data at age 0 in fit_param.R
     INTRINSIC_DEATH_RATE = 0.8512 # abs(slope) from fit_param.R.  WE MAY WANT TO REMOVE
     RANDOM_DEATH_PROB = 0.01 # Lower bound to death prob
@@ -717,7 +803,6 @@ get_simulation_parameters = function(...){
 
     ## Rodent parameters
     MOUSE_WORM_MEAN = 3.49 # Abundance of worms in peromyscus estimated from Sara's data
-    MOUSE_WORM_AGG = 0.22 # Aggregation of worms (k parameter) in peromyscus
     LARVAL_WORM_INFECTIVITY = 0.25 # Probability of larval worm establishing
 
 
@@ -750,7 +835,7 @@ get_simulation_parameters = function(...){
 
     INFECTIVITY = 0.02 # Probability of infectivity
     RESISTANCE = 0.03 # How quickly a raccoon gains resistance based on previous load
-    EGG_DECAY = 0.3 # Rate of egg decay such that 2%-3% chance of survival after year. TODO: Revisit this
+    EGG_DECAY = 0.3 # Rate of egg decay such that 2%-3% chance of survival after year. 
 
     # See fit_param.R for how we got these values
     WORM_SURV_TRESH = 4.7104 #/ 2 # Threshold parameter of worm survival probability
@@ -773,7 +858,6 @@ get_simulation_parameters = function(...){
                 RODENT_ENCOUNTER_PROB=RODENT_ENCOUNTER_PROB,
                 INIT_WORMS=INIT_WORMS,
                 MOUSE_WORM_MEAN=MOUSE_WORM_MEAN,
-                MOUSE_WORM_AGG=MOUSE_WORM_AGG,
                 LARVAL_WORM_INFECTIVITY=LARVAL_WORM_INFECTIVITY,
                 FIRST_REPRO_AGE=FIRST_REPRO_AGE,
                 LITTER_SIZE=LITTER_SIZE,
@@ -806,7 +890,7 @@ get_simulation_parameters = function(...){
 
     # Update if any parameters changed
     params$BIRTH_RATE = log(params$LITTER_SIZE) # Gives birth rate. Little r in ricker function
-    params$BETA = params$BIRTH_RATE / params$K_CAPACITY # TODO: CHECK WHY I DID THIS?
+    params$BETA = params$BIRTH_RATE / params$K_CAPACITY # From Encyclopedia of Theoretical Ecology, pg. 634.
 
     return(params)
 
@@ -823,8 +907,8 @@ get_init_arrays = function(prms){
     age_array = array(NA, dim=c(prms$TIME_STEPS + 1, prms$INIT_NUM_RACCOONS))
     age_array[1, ] = initial_age_vector
     human_vect = assign_human_contacts(prms$INIT_NUM_RACCOONS)
-    human_risk_through_time = list()
-    human_risk_through_time[[1]] = human_vect
+    human_overlap_through_time = list()
+    human_overlap_through_time[[1]] = human_vect
     eggproduction_array = array(NA, dim=c(prms$TIME_STEPS + 1, prms$ZONES))
 
 
@@ -878,7 +962,7 @@ get_init_arrays = function(prms){
                        initial_age_vector=initial_age_vector,
                        age_array=age_array,
                        human_vect=human_vect,
-                       human_risk_through_time=human_risk_through_time,
+                       human_overlap_through_time=human_overlap_through_time,
                        new_babies_vect=new_babies_vect,
                        infra_mouse_worm_array=infra_mouse_worm_array,
                        infra_nonmouse_worm_array=infra_nonmouse_worm_array,

@@ -1,20 +1,16 @@
 ## IBM Model Draft for Raccoon Parasites
 
-## Date: 11 / 18 / 2016
-
 ## Authors: SW and MW
 
 ## Notes
 ##
-## We are assuming (right now) an all female raccoon population and they are
-## only reproducing females.  We will modify this later (2-26-2016)
-##
-##
+## We are assuming an all female raccoon population and they are
+## only reproducing females. 
 
 library(parallel)
+library(profvis)
 source("raccoon_fxns.R") # Load in the helper functions
 set.seed(1)
-
 
 full_simulation = function(cull_params, birth_control_params, 
             worm_control_params, management_time, 
@@ -24,18 +20,14 @@ full_simulation = function(cull_params, birth_control_params,
     # Parameters
     # ----------
     # cull_params : list or NULL, parameters for culling strategies. See cull_strategy
-    #    i.e. list(strategy="age", cull_prob=0.9, overlap_threshold=0.5)
-    # birth_control_params : list or NULL, parameters for birth control strategies
-    #       i.e. list(strategy="random", distribution=0.9), see control_strategy
-    # worm_control_params : list or NULL, parameter for worm control strats
-    #           list(strategy="random", distribution=0.5), see picked_up_bait
+    #    i.e. list(strategy="age", quota=5, overlap_threshold=0.5)
     # management_time : int, time in simulation where management begins
     # prms : list, simulation parameters
     # init_arrays : initial arrays for holding results
     # print_it : bool, if TRUE prints progress, otherwise False.
 
 
-    # Save the init arrays to the current environment...might not work
+    # Save the init arrays to the current environment
     list2env(init_arrays, envir=environment())
 
     # Loop through time steps
@@ -49,6 +41,7 @@ full_simulation = function(cull_params, birth_control_params,
         new_babies = 0
         babies_at_this_time_vect = array(NA, dim=dim(raccoon_worm_array)[2])
 
+        # Calculate eggs remaining in each zone for this time step
         eggs_remaining = get_cumulative_egg_load(time - 1, eggproduction_array, 
                                             prms$EGG_DECAY)
 
@@ -58,7 +51,7 @@ full_simulation = function(cull_params, birth_control_params,
             cull_indices = get_cull_indices(cull_params,
                                          raccoon_dead_alive_array[time - 1, ],
                                          age_array[time - 1, ], 
-                                         human_risk_through_time[[time - 1]])
+                                         human_overlap_through_time[[time - 1]])
 
             tbirth_control_params = NULL #birth_control_params 
             tworm_control_params = NULL #worm_control_params 
@@ -68,11 +61,11 @@ full_simulation = function(cull_params, birth_control_params,
             tworm_control_params = NULL 
         }
 
-        # Loop through raccoons BUT ONLY LOOP THROUGH RACCOON THAT ARE ALIVE
+        # Loop through raccoons but only through raccoons that are alive
         alive_inds = which(raccoon_dead_alive_array[time - 1, ] == 1)
         dead_inds = which(raccoon_dead_alive_array[time - 1, ] == 0)
 
-        # Keep the deads dead
+        # Keep the dead raccoons dead
         raccoon_worm_array[time, dead_inds] = NA
         raccoon_dead_alive_array[time, dead_inds] = 0
 
@@ -84,7 +77,9 @@ full_simulation = function(cull_params, birth_control_params,
                         sum(raccoon_dead_alive_array[, rac], na.rm=T)
 
             # Get overlap and raccoon zones
-            overlap_now = human_risk_through_time[[time - 1]][rac]
+            overlap_now = human_overlap_through_time[[time - 1]][rac]
+
+            # NOTE: We could speed this up by assigning raccoons discrete zones
             zone_now = get_raccoon_zone(overlap_now, prms$ZONES)
 
             alive_now = kill_my_raccoon(raccoon_worm_array[time - 1, rac],
@@ -96,8 +91,7 @@ full_simulation = function(cull_params, birth_control_params,
 
             raccoon_dead_alive_array[time, rac] = alive_now
 
-
-            if(alive_now){
+            if(alive_now){ # Do this if raccoon is alive
 
                 # 1. Give birth if appropriate
 
@@ -114,11 +108,10 @@ full_simulation = function(cull_params, birth_control_params,
                 babies_at_this_time_vect[rac] = new_babies_now
                 new_babies = new_babies + new_babies_now
 
-                # 2. Deposit Eggs (ignoring for now)
-
-                # 3. Kill old worms for each possible source of worms
+                # 2. Kill old worms for each possible source of worms
                 got_bait = picked_up_bait(overlap_now, tworm_control_params)
 
+                # NOTE: Think about not tracking mouse and non-mouse worms separately
                 for(tw in 1:length(all_worms_infra_array)){
 
                     previous_cohorts = all_worms_infra_array[[tw]][[rac]][time - 1, 1:(time - 1)]
@@ -132,8 +125,7 @@ full_simulation = function(cull_params, birth_control_params,
 
                 }
 
-                # 4. Pick up eggs or pick up rodents depending on age
-
+                # 3. Pick up eggs or pick up rodents depending on age
                 if(age_now <= prms$AGE_EGG_RESISTANCE){ # Only pick up worms from eggs
 
                     worms_acquired = pick_up_eggs(prms$ENCOUNTER_MEAN,
@@ -148,7 +140,6 @@ full_simulation = function(cull_params, birth_control_params,
 
                 } else{ # Only pick up worms from rodent
                     worms_acquired = pick_up_rodents(prms$MOUSE_WORM_MEAN,
-                                                     prms$MOUSE_WORM_AGG,
                                                      prms$RODENT_ENCOUNTER_PROB,
                                                      prms$LARVAL_WORM_INFECTIVITY,
                                                      eggs_remaining[zone_now],
@@ -162,11 +153,7 @@ full_simulation = function(cull_params, birth_control_params,
                 raccoon_worm_array[time, rac] = sum(all_worms_infra_array[[1]][[rac]][time, ], na.rm=T) + 
                                                 sum(all_worms_infra_array[[2]][[rac]][time, ], na.rm=T)
 
-                # sum(unlist(lapply(all_worms_infra_array, 
-                #             function(wa) sum(wa[[rac]][time, ], na.rm=T))))
-
-
-                # 5. Disperse if raccoon is 6
+                # 4. Disperse if raccoon is 6
                 if(age_now == prms$DISPERSAL_AGE){
                     human_vect[rac] = assign_human_contacts(1)
                 }
@@ -177,7 +164,6 @@ full_simulation = function(cull_params, birth_control_params,
             }
 
         }
-
 
         # Update the various vectors if babies were born
         if(new_babies > 0){
@@ -202,7 +188,7 @@ full_simulation = function(cull_params, birth_control_params,
         }
 
         # Save the new human risk array
-        human_risk_through_time[[time]] = human_vect
+        human_overlap_through_time[[time]] = human_vect
         eggproduction_array[time, ] = assign_egg_production(
                                             raccoon_worm_array[time, ],
                                             human_vect,
@@ -217,7 +203,7 @@ full_simulation = function(cull_params, birth_control_params,
                 raccoon_worm_array=raccoon_worm_array,
                 all_worms_infra_array=all_worms_infra_array,
                 human_vect=human_vect,
-                human_risk_through_time=human_risk_through_time,
+                human_overlap_through_time=human_overlap_through_time,
                 eggproduction_array=eggproduction_array))
 } # End full simulation
 
@@ -250,7 +236,7 @@ run_and_extract_results = function(i, quota, management_time,
     mean_worm_pop = mean(worm_pop_traj[(tot_steps - 12):tot_steps])
 
     # Human risk # UPDATE THIS
-    human_risk = get_human_risk_metric(all_res$human_risk_through_time, 
+    human_risk = get_human_risk_metric(all_res$human_overlap_through_time, 
                           all_res$raccoon_worm_array, 
                           params$EGG_DECAY)$weighted
     max_human_risk = max(human_risk[(tot_steps - 12):tot_steps])
@@ -285,11 +271,12 @@ single_sim = TRUE # IF TRUE JUST RUNS A SINGLE SIMULATION
 
 if(single_sim){ # Run a single simulation
 
-    params = get_simulation_parameters(TIME_STEPS=time_steps) # Load in simulation parameters
+    params = get_simulation_parameters(TIME_STEPS=time_steps, K_CAPACITY=10, 
+                                              INIT_NUM_RACCOONS=20) # Load in simulation parameters
     init_arrays = get_init_arrays(params) # Load in init arrays
-    all_res = full_simulation(cull_params, birth_control_params, 
+    profvis({all_res = full_simulation(cull_params, birth_control_params, 
                                     worm_control_params, management_time,
-                                    params, init_arrays, print_it=TRUE)
+                                    params, init_arrays, print_it=TRUE)})
 } else{ # Run a full simulation
 
     # Arrays to hold sim results
@@ -297,7 +284,7 @@ if(single_sim){ # Run a single simulation
     sim_var_results = list()
 
 
-    for(j in 1:length(quotas)){ # Looping through cull_probs
+    for(j in 1:length(quotas)){ # Looping through quotas
         
         # Parallelize within each quota
         sim_vals = mclapply(1:SIMS, run_and_extract_results, 
