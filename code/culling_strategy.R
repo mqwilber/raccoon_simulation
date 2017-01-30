@@ -231,9 +231,7 @@ run_and_extract_results = function(i, quota, management_time,
     mean_worm_pop = mean(worm_pop_traj[(tot_steps - 12):tot_steps])
 
     # Human risk # UPDATE THIS
-    human_risk = get_human_risk_metric(all_res$human_overlap_through_time, 
-                          all_res$raccoon_worm_array, 
-                          params$EGG_DECAY)$weighted
+    human_risk = get_human_risk_metric(all_res$eggproduction_array, params$EGG_DECAY)
     max_human_risk = max(human_risk[(tot_steps - 12):tot_steps])
     min_human_risk = min(human_risk[(tot_steps - 12):tot_steps])
     mean_human_risk = mean(human_risk[(tot_steps - 12):tot_steps])
@@ -245,62 +243,84 @@ run_and_extract_results = function(i, quota, management_time,
 
 }
 
+
 ## RUNNING SIMULATION ###
 
-
 # Simulation parameters
-cull_params = list(strategy="random", quota=0, overlap_threshold=0.25)
+cull_params = list(strategy="random", quota=9, overlap_threshold=0.8)
 birth_control_params = NULL #list(strategy="random", distribution=0.9)
 worm_control_params = NULL #list(strategy="random", distribution=0.5)
 
 
 quotas = 0:10#0:5
-SIMS = 150
-management_time = 200
-time_steps = 200
+SIMS = 50
+management_time = 50
+time_steps = 220
 col_names = c("min_rac_pop", "mean_rac_pop", "max_rac_pop", 
              "min_worm_pop", "mean_worm_pop", "max_worm_pop",
              "min_human_risk", "mean_human_risk", "max_human_risk")
-single_sim = TRUE # IF TRUE JUST RUNS A SINGLE SIMULATION 
+single_sim = FALSE # IF TRUE JUST RUNS A SINGLE SIMULATION 
 
 
 if(single_sim){ # Run a single simulation
 
-    params = get_simulation_parameters(TIME_STEPS=time_steps)# K_CAPACITY=10, 
+    params = get_simulation_parameters(TIME_STEPS=time_steps)#, K_CAPACITY=10, 
                                               #INIT_NUM_RACCOONS=20) # Load in simulation parameters
     init_arrays = get_init_arrays(params) # Load in init arrays
-    profvis({all_res = full_simulation(cull_params, birth_control_params, 
+    all_res = full_simulation(cull_params, birth_control_params, 
                                     worm_control_params, management_time,
-                                    params, init_arrays, print_it=TRUE)})
+                                    params, init_arrays, print_it=TRUE)
+
 } else{ # Run a full simulation
 
-    # Arrays to hold sim results
-    sim_mean_results = list()
-    sim_var_results = list()
+    # Different strategies
+    strategies = list("human"=c(0.5), "age"=c(12), "random"=c(1))
 
+    for(strategy in names(strategies)){ # Loop through different strategies
 
-    for(j in 1:length(quotas)){ # Looping through quotas
-        
-        # Parallelize within each quota
-        sim_vals = mclapply(1:SIMS, run_and_extract_results, 
-                                            quotas[j], management_time, 
-                                            cull_params, birth_control_params,
-                                            worm_control_params, time_steps, 
-                                            mc.cores=4)
+        print(paste("Beginning", strategy))
 
-        cull_matrix = do.call(rbind, sim_vals)
+        controls = strategies[[strategy]]
 
-        cull_means = colMeans(cull_matrix)
-        cull_vars = apply(cull_matrix, 2, sd)
-        names(cull_means) = col_names
-        names(cull_vars) = col_names
-        sim_mean_results[[j]] = cull_means
-        sim_var_results[[j]] = cull_vars
+        for(control in controls){ # Loops through different ages of overlaps
+
+            cull_params$strategy = strategy
+            cull_params$overlap_threshold = control
+            cull_params$age = control
+
+            # Arrays to hold sim results
+            sim_mean_results = list()
+            sim_var_results = list()
+
+            for(j in 1:length(quotas)){ # Looping through quotas
+                
+                # Parallelize within each quota
+                sim_vals = mclapply(1:SIMS, run_and_extract_results, 
+                                                    quotas[j], management_time, 
+                                                    cull_params, birth_control_params,
+                                                    worm_control_params, time_steps, 
+                                                    mc.cores=4)
+
+                cull_matrix = do.call(rbind, sim_vals)
+
+                cull_means = colMeans(cull_matrix)
+                cull_vars = apply(cull_matrix, 2, sd)
+                names(cull_means) = col_names
+                names(cull_vars) = col_names
+                sim_mean_results[[j]] = cull_means
+                sim_var_results[[j]] = cull_vars
+
+            }
+
+            saveRDS(sim_mean_results, 
+                        paste("../results/cull_", strategy, "/sim_mean_results_", 
+                               strategy, control, ".rds", sep=""))
+            saveRDS(sim_var_results, 
+                        paste("../results/cull_", strategy, "/sim_var_results_", 
+                               strategy, control, ".rds", sep=""))
+
+            print(paste("Analysis complete for", strategy, control))
+        }
 
     }
-
-    saveRDS(sim_mean_results, "sim_mean_results.rds")
-    saveRDS(sim_var_results, "sim_var_results.rds")
-
-    print("Analysis complete")
 }

@@ -458,11 +458,20 @@ assign_egg_production = function(raccoon_worm_vect, human_vect, zones){
     # From the raccoon worm array vector at time t and the human array
     # vector at time t, assign the egg production per zone
     #
+    # Parameters
+    # ----------
+    # raccoon_worm_vect : vector, worms in raccoons at time t
+    # human_vect : vector, overlap values for raccoons
+    # zones : int,  number of zones
     #
+    # Returns
+    # -------
+    # : vector, egg_production in all zones at time t
 
     # Group raccoons by zones
-    breaks = seq(0, 1, len=zones + 1)
-    zone_labels = .bincode(human_vect, breaks)
+    zone_labels = get_raccoon_zone(human_vect, zones)
+    # breaks = seq(0, 1, len=zones + 1)
+    # zone_labels = .bincode(human_vect, breaks)
 
     # Calc. number infected in each zone, dropping NAs
     dt = data.table(zone_num=zone_labels, pa=(raccoon_worm_vect > 0))
@@ -577,69 +586,13 @@ update_arrays = function(time, new_babies, new_babies_vect,
 
 }
 
-
-combine_worm_arrays = function(all_worm_arrays, raccoon_dead_alive_array){
-    # Takes in multiple independent worm arrays and combines them into a 
-    # total worm array. Used for distinguishing between worms from rodents
-    # and worms from eggs.
-    #
-    # all_worm_arrays : list of different infra_worm_arrays from different
-    #                   possible sources. Could be from arbitrarily many sources
-    #
-
-    # Create matrices in lists
-    convert_lists = lapply(seq_along(all_worm_arrays), 
-                        function(x) simplify2array(all_worm_arrays[[x]]))
-
-    # 4 dimensional matrix
-    converted_matrix = simplify2array(convert_lists)
-
-    # Sum across different worm arrays
-    sum_worms = apply(converted_matrix, 1:3, sum, na.rm=TRUE)
-
-    # Convert back to lists
-    sum_worms_list = lapply(1:dim(sum_worms)[3], function(i) sum_worms[, , i])
-
-    # Replace upper diags with NAs
-    sum_worms_list = lapply(sum_worms_list, function(x){x[upper.tri(x)] = NA; return(x)})
-
-    # Replace 0s with NA if raccoon did not yet exist
-    for(j in 1:length(sum_worms_list)){
-
-        # If raccooon doesn't yet exist set to NA
-        inds = which(is.na(raccoon_dead_alive_array[, j]))
-        sum_worms_list[[j]][inds, ] = NA
-        sum_worms_list[[j]][, inds] = NA
-
-        # If raccoon is dead set to NA
-        dead = which(raccoon_dead_alive_array[, j] == 0)
-        sum_worms_list[[j]][dead, ] = NA
-
-    }
-
-    return(sum_worms_list)
-
-
-}
-
-get_tot_worm_array_from_infra = function(infra_worm_array, raccoon_dead_alive_array){
-    # Convert infra-worm array to total raccoon worm array
-
-    total_worm_array = do.call(cbind, lapply(infra_worm_array, 
-                                function(x) apply(x, 1, sum, na.rm=T)))
-    total_worm_array[raccoon_dead_alive_array == 0] = NA
-    total_worm_array[is.na(raccoon_dead_alive_array)] = NA
-
-    return(total_worm_array)
-
-}
-
 get_human_risk_metric = function(eggproduction_array, egg_decay){
     # Calculating the human risk metric through time
     # This is using a weighted measure of human risk based on the past
     # worm loads in the population
     #
     # Parameters
+    # -----------
     # human_overlap_through_time: list containing the vectors that have human
     #                           risks for each raccoon
     # raccoon_worm_array: Raccoon worm array
@@ -780,10 +733,14 @@ get_simulation_parameters = function(...){
     # Get parameters for the simulation
     #
     # You can pass keyword arguments to this function to reassign the 
-    # default parameters
+    # default parameters.  The keyword parameters must match the parameters
+    # defined below
+    #
+    # Returns
+    # -------
+    # list : a list of all the simulation parameters
 
     ## Raccoon parameters
-
     INIT_NUM_RACCOONS = 500
     #DEATH_PROB = 22 # Natural death
     DEATH_THRESHOLD = 22 #22 # beta in death_probability fxn
@@ -896,6 +853,14 @@ get_simulation_parameters = function(...){
 
 get_init_arrays = function(prms){
     # Initial arrays for raccoon simulation
+    #
+    # Parameters
+    # ----------
+    # prms : list, the list returned from `get_simulation_parameters`
+    #
+    # Returns
+    # -------
+    # : list holding the initialized arrays for the simulation
 
     # Set up the raccoon arrays
 
