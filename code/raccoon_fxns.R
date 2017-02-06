@@ -172,6 +172,38 @@ get_cull_indices = function(cull_params, raccoon_dead_alive_vect,
 }
 
 
+get_birth_control_indices = function(birth_control_params, repro_able_vect){
+    # Obtain indices of raccoons that will receive birth control
+    #
+    # Parameters
+    # ----------
+    # birth_control_params : list, parameters for...TODO
+    # repro_able_vect : vector, containing 0 (can't reproduce), 
+    #                    1 (can reproduce) or NA (dead)
+
+    if(birth_control_params$strategy == "random"){
+
+        pop_inds = which(!is.na(repro_able_vect))
+
+    } else{
+        stop(paste(birth_control_params$strategy, "is not a recognized strategy. Try random"))
+    }
+
+    # Check if there are any raccoons to cull.
+    if(length(pop_inds) > 1){
+
+        # Sterilize either quota or how ever many individuals are there < quota. 
+        birth_control_inds = sample(pop_inds, min(c(length(pop_inds), 
+                                                  birth_control_params$quota)))
+
+    } else{
+        birth_control_inds = pop_inds # Empty vector
+    }
+
+    return(birth_control_inds)
+}
+
+
 kill_raccoon_worms = function(previous_cohorts, death_thresh, death_slope, 
                 got_bait=0){
     # Function to kill worms in raccoon based on worm age
@@ -253,10 +285,9 @@ picked_up_bait = function(overlap, worm_control_params=NULL){
 
 }
 
-give_birth = function(age_now, time, tot_racs,
+give_birth = function(age_now, time, tot_racs, repro_able,
                         month_at_repro,
-                        first_repro_age, litter_size, beta,
-                        birth_control_params=NULL){
+                        first_repro_age, litter_size, beta){
     # Decide how many babies are produced by a raccoon. Check if the month
     # is right and if the raccoon is old enough.
     #
@@ -265,6 +296,7 @@ give_birth = function(age_now, time, tot_racs,
     # age_now : int, age of raccoon in months
     # time : int, current time
     # tot_racs : int, total number of raccoons in population
+    # repro_able : int, 0 if rac can't reproduce and 1 if it can reproduce
     # month_at_repro, first_repro_age, litter_size, beta: see `get_simulation_parameters`
     # birth_control_params : list, TODO: Revisit after culling is working
     #
@@ -279,9 +311,11 @@ give_birth = function(age_now, time, tot_racs,
 
         if(age_now >= first_repro_age){ # If the age is right
 
-            birth_event = birth_control_strategy(birth_control_params)
-            repro_prob = birth_event * exp(-(beta*tot_racs)) # Ricker function from Encyclopedia of Theoretical Ecology pg 634
-            repro = rbinom(1, litter_size, repro_prob)
+            if(repro_able == 1){ # If the raccoon has never had birth control
+
+                repro_prob = exp(-(beta*tot_racs)) # Ricker function from Encyclopedia of Theoretical Ecology pg 634
+                repro = rbinom(1, litter_size, repro_prob)
+            }
         }
 
     }
@@ -528,6 +562,7 @@ update_arrays = function(time, new_babies, new_babies_vect,
                                            raccoon_worm_array,
                                            age_array, infra_worm_array,
                                            human_vect,
+                                           repro_able_vect,
                                            babies_at_this_time_vect,
                                            time_steps){
 
@@ -560,6 +595,8 @@ update_arrays = function(time, new_babies, new_babies_vect,
     human_vect = c(human_vect, rep(human_vect[ind],
                                     babies_at_this_time_vect[ind]))
 
+    repro_able_vect = c(repro_able_vect, rep(1, new_babies))
+
     raccoon_dead_alive_array = cbind(raccoon_dead_alive_array,
                                                 new_alive_babies)
 
@@ -582,7 +619,8 @@ update_arrays = function(time, new_babies, new_babies_vect,
                 raccoon_dead_alive_array=raccoon_dead_alive_array,
                 raccoon_worm_array=raccoon_worm_array,
                 infra_worm_array=infra_worm_array,
-                human_vect=human_vect))
+                human_vect=human_vect,
+                repro_able_vect=repro_able_vect))
 
 }
 
@@ -870,10 +908,10 @@ get_init_arrays = function(prms){
     age_array = array(NA, dim=c(prms$TIME_STEPS + 1, prms$INIT_NUM_RACCOONS))
     age_array[1, ] = initial_age_vector
     human_vect = assign_human_contacts(prms$INIT_NUM_RACCOONS)
+    repro_able_vect = rep(1, prms$INIT_NUM_RACCOONS)
     human_overlap_through_time = list()
     human_overlap_through_time[[1]] = human_vect
     eggproduction_array = array(NA, dim=c(prms$TIME_STEPS + 1, prms$ZONES))
-
 
 
     new_babies_vect = array(NA, dim=prms$TIME_STEPS + 1)
@@ -910,7 +948,8 @@ get_init_arrays = function(prms){
                        new_babies_vect=new_babies_vect,
                        infra_worm_array=infra_worm_array,
                        raccoon_worm_array=raccoon_worm_array,
-                       eggproduction_array=eggproduction_array)
+                       eggproduction_array=eggproduction_array,
+                       repro_able_vect=repro_able_vect)
 
     return(init_arrays)
 }

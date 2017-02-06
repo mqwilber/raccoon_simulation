@@ -44,14 +44,23 @@ for(varname in vars){
 # Plot the simulation results
 
 plotting_df = do.call(rbind, plotting_df)
-gp = ggplot(plotting_df, aes(x=quota, y=log10(mean_value), color=strategy)) + 
+plotting_df = plotting_df[plotting_df$metric != "mean_worm_pop", ]
+gp = ggplot(plotting_df, aes(x=quota, y=log10(mean_value + 1), color=strategy)) + 
                     geom_line() +
-                    geom_ribbon(aes(ymin=log10(mean_value - sd_value), 
-                                    ymax=log10(mean_value + sd_value),
-                                    color=strategy), alpha=0.3) +
+                    # geom_ribbon(aes(ymin=log10(mean_value + 1 - sd_value), 
+                    #                 ymax=log10(mean_value  + 1 + sd_value),
+                    #                 color=strategy), alpha=0.3) +
                     facet_wrap(~metric) + theme_bw() + xlab("Quota") + 
                     ylab("log(population) or log(metric)") +
                     scale_x_continuous(breaks=0:10)
 
+gp2 = ggplot(plotting_df, aes(x=quota, y=mean_value, color=strategy)) + 
+                    geom_line() +
+                    # geom_ribbon(aes(ymin=mean_value - sd_value, 
+                    #                 ymax=mean_value + sd_value,
+                    #                 color=strategy), alpha=0.3) +
+                    facet_wrap(~metric) + theme_bw() + xlab("Quota") + 
+                    ylab("log(population) or log(metric)") +
+                    scale_x_continuous(breaks=0:10)
 
 gp

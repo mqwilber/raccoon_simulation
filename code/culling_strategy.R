@@ -48,15 +48,22 @@ full_simulation = function(cull_params, birth_control_params,
         # If time is >= management time begin management
         if(time >= management_time){
 
-            cull_indices = get_cull_indices(cull_params,
-                                         raccoon_dead_alive_array[time - 1, ],
-                                         age_array[time - 1, ], 
-                                         human_overlap_through_time[[time - 1]])
+            # TODO: Set this up so you don't comment
+            cull_indices = integer(0)#get_cull_indices(cull_params,
+                            #             raccoon_dead_alive_array[time - 1, ],
+                            #             age_array[time - 1, ], 
+                            #             human_overlap_through_time[[time - 1]])
 
-            tbirth_control_params = NULL #birth_control_params 
+            # Pick individuals for birth control
+            birth_control_indices = get_birth_control_indices(birth_control_params,
+                                                repro_able_vect)
+
+            # If picked for birth control, can't have babies
+            repro_able_vect[birth_control_indices] = 0 
+
             tworm_control_params = NULL #worm_control_params 
         } else{
-            tbirth_control_params = NULL 
+            birth_control_indices = integer(0) 
             cull_indices = integer(0)
             tworm_control_params = NULL 
         }
@@ -98,11 +105,11 @@ full_simulation = function(cull_params, birth_control_params,
                 age_array[time, rac] = age_now
 
                 tot_racs = sum(raccoon_dead_alive_array[time, ], na.rm=T)
-                new_babies_now = give_birth(age_now, time, tot_racs,
+                new_babies_now = give_birth(age_now, time, tot_racs, 
+                                                        repro_able_vect[rac],
                                                         prms$MONTH_AT_REPRO,
                                                         prms$FIRST_REPRO_AGE,
-                                                        prms$LITTER_SIZE, prms$BETA,
-                                    birth_control_params=tbirth_control_params)
+                                                        prms$LITTER_SIZE, prms$BETA)
 
                 # Add new babies to array to assign human contacts later
                 babies_at_this_time_vect[rac] = new_babies_now
@@ -156,6 +163,7 @@ full_simulation = function(cull_params, birth_control_params,
             } else { # Raccoon dead and its worms die
                 raccoon_worm_array[time, rac] = NA
                 human_vect[rac] = NA
+                repro_able_vect[rac] = NA
             }
 
         }
@@ -169,6 +177,7 @@ full_simulation = function(cull_params, birth_control_params,
                                                raccoon_worm_array,
                                                age_array, infra_worm_array,
                                                human_vect,
+                                               repro_able_vect,
                                                babies_at_this_time_vect,
                                                prms$TIME_STEPS)
 
@@ -179,6 +188,7 @@ full_simulation = function(cull_params, birth_control_params,
             raccoon_worm_array = updated_arrays$raccoon_worm_array
             infra_worm_array = updated_arrays$infra_worm_array
             human_vect = updated_arrays$human_vect
+            repro_able_vect = updated_arrays$repro_able_vect
 
         }
 
@@ -198,6 +208,7 @@ full_simulation = function(cull_params, birth_control_params,
                 raccoon_worm_array=raccoon_worm_array,
                 infra_worm_array=infra_worm_array,
                 human_vect=human_vect,
+                repro_able_vect=repro_able_vect,
                 human_overlap_through_time=human_overlap_through_time,
                 eggproduction_array=eggproduction_array))
 } # End full simulation
@@ -247,19 +258,19 @@ run_and_extract_results = function(i, quota, management_time,
 ## RUNNING SIMULATION ###
 
 # Simulation parameters
-cull_params = list(strategy="random", quota=9, overlap_threshold=0.8)
-birth_control_params = NULL #list(strategy="random", distribution=0.9)
+cull_params = NULL # list(strategy="random", quota=9, overlap_threshold=0.8)
+birth_control_params = list(strategy="random", quota=20)
 worm_control_params = NULL #list(strategy="random", distribution=0.5)
 
 
 quotas = 0:10#0:5
 SIMS = 50
-management_time = 50
-time_steps = 220
+management_time = 10
+time_steps = 50
 col_names = c("min_rac_pop", "mean_rac_pop", "max_rac_pop", 
              "min_worm_pop", "mean_worm_pop", "max_worm_pop",
              "min_human_risk", "mean_human_risk", "max_human_risk")
-single_sim = FALSE # IF TRUE JUST RUNS A SINGLE SIMULATION 
+single_sim = TRUE # IF TRUE JUST RUNS A SINGLE SIMULATION 
 
 
 if(single_sim){ # Run a single simulation
