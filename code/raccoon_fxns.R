@@ -173,14 +173,26 @@ get_cull_indices = function(cull_params, raccoon_dead_alive_vect,
 }
 
 
-get_birth_control_indices = function(birth_control_params, repro_able_vect){
+get_birth_control_indices = function(birth_control_params, repro_able_vect, 
+                                    human_overlap_through_time_vect){
     # Obtain indices of raccoons that will receive birth control
     #
     # Parameters
     # ----------
-    # birth_control_params : list, parameters for...TODO
+    # birth_control_params : list, parameters for birth control
+    #                       `strategy`: "random" - Randomly apply birth control
+    #                                   "human" - Only apply birth control
+    #                                    to certain overlap zones
+    #                        `quota`: How many raccoons (max) should get
+    #                           birth control per month. Raccoons that already
+    #                           have birth control are still caught. Integer.
+    #                         `overlap_threshold`: Raccoons in this human 
+    #                            overlap zone or greater are caught and given 
+    #                            birth control. Between 0 and 1.
     # repro_able_vect : vector, containing 0 (can't reproduce), 
     #                    1 (can reproduce) or NA (dead)
+    # human_overlap_through_time_vect: vector, specifies the human overlap value
+    #                   of alive raccoons at time t - 1.
     #
     # Returns
     # -------
@@ -195,8 +207,18 @@ get_birth_control_indices = function(birth_control_params, repro_able_vect){
 
         pop_inds = which(!is.na(repro_able_vect))
 
+    } else if(birth_control_params$strategy == "human"){
+
+        if(is.null(birth_control_params$overlap_threshold)){
+            stop("Provide overlap_threshold")
+        }
+
+        pop_inds = which(human_overlap_through_time_vect > 
+                                    birth_control_params$overlap_threshold)
+
     } else{
-        stop(paste(birth_control_params$strategy, "is not a recognized strategy. Try random"))
+        stop(paste(birth_control_params$strategy, 
+                    "is not a recognized strategy. Try random or human"))
     }
 
     # Check if there are any raccoons to cull.
@@ -333,38 +355,6 @@ give_birth = function(age_now, time, tot_racs, repro_able,
     return(repro)
 
 }
-
-# TODO: Revist this after culling is working
-birth_control_strategy = function(birth_control_params){
-    # Strategies for birth control. `birth_control_params` must have the 
-    # name `strategy` which specifies which birth control strategy to use.
-    # 
-    # 
-    # Possible strategies are:
-    # 1. `random` : All individuals are susceptible to birth control
-    #   - Additional parameters: `distributions` - between 0 and 1 where
-    #   0 is no distribution of birth control and 1 is complete distribution
-    #   of birth control.
-    #
-    # Parameters
-    # ----------
-    # birth_control_params : list, see above
-    #
-    # Returns
-    # --------
-    # 0 or 1 determining whether or not it enter breeding cycle
-
-    if(is.null(birth_control_params$strategy)){
-        return(1)
-    }
-
-    if(birth_control_params$strategy == "random"){
-        birth_event = rbinom(1, 1, 1 - birth_control_params$distribution)
-    }
-
-    return(birth_event)
-}
-
 
 
 pick_up_eggs = function(emean, ek, infect, resist, eggs_environ, load,
@@ -960,19 +950,26 @@ get_init_arrays = function(prms){
 }
 
 
-full_simulation = function(cull_params, birth_control_params, 
-            worm_control_params, management_time, 
-            prms, init_arrays, print_it=FALSE){
+full_simulation = function(prms, init_arrays, cull_params=NULL, 
+                           birth_control_params=NULL, worm_control_params=NULL,
+                           management_time=50,  print_it=FALSE){
     # Runs the full individual based simulation
     #
     # Parameters
     # ----------
-    # cull_params : list or NULL, parameters for culling strategies. See cull_strategy
-    #    i.e. list(strategy="age", quota=5, overlap_threshold=0.5)
-    # management_time : int, time in simulation where management begins
     # prms : list, simulation parameters
     # init_arrays : initial arrays for holding results
     # print_it : bool, if TRUE prints progress, otherwise False.
+    # cull_params : list or NULL, parameters for culling strategies. 
+    #    i.e. list(strategy="age", quota=5, overlap_threshold=0.5)
+    #    Default is NULL.
+    # birth_control_params : list or NULL, parameters for birth control strategies. 
+    #    i.e. list(strategy="human", quota=5, overlap_threshold=0.5)
+    #    Default is NULL.
+    # worm_control_params : list or NULL, TODO
+    # management_time : int, time in simulation where management begins.
+    #                   Default is 50.
+    # 
 
 
     # Save the init arrays to the current environment
@@ -996,20 +993,21 @@ full_simulation = function(cull_params, birth_control_params,
         # If time is >= management time begin management
         if(time >= management_time){
 
-            # TODO: Set this up so you don't comment
             cull_indices = get_cull_indices(cull_params,
                                          raccoon_dead_alive_array[time - 1, ],
                                          age_array[time - 1, ], 
                                          human_overlap_through_time[[time - 1]])
 
             # Pick individuals for birth control
-            birth_control_indices = get_birth_control_indices(birth_control_params,
-                                                repro_able_vect)
+            birth_control_indices = get_birth_control_indices(
+                                            birth_control_params,
+                                            repro_able_vect,
+                                            human_overlap_through_time[[time - 1]])
 
             # If picked for birth control, can't have babies
             repro_able_vect[birth_control_indices] = 0 
 
-            tworm_control_params = NULL #worm_control_params 
+            tworm_control_params = worm_control_params 
         } else{
             birth_control_indices = integer(0) 
             cull_indices = integer(0)
