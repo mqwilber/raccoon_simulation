@@ -345,7 +345,6 @@ give_birth = function(age_now, time, tot_racs, repro_able,
     # tot_racs : int, total number of raccoons in population
     # repro_able : int, 0 if rac can't reproduce and 1 if it can reproduce
     # month_at_repro, first_repro_age, litter_size, beta: see `get_simulation_parameters`
-    # birth_control_params : list, TODO: Revisit after culling is working
     #
     # Returns
     # -------
@@ -501,7 +500,33 @@ get_raccoon_zone = function(overlap, zones){
 
 }
 
-## START CODE REVIEW HERE ##
+get_zone_density = function(overlap, zones){
+    # Gets the population density in each zone
+    #
+    # Parameters
+    # ----------
+    # overlap : vector, overlap of raccoon(s)
+    # zones : int, number of zones
+    # 
+    # Returns
+    # -------
+    # : vector, of length zones with density of raccoons in each zone
+
+    zone_labels = get_raccoon_zone(overlap, zones)
+    racs_per_zone = table(zone_labels) # This drops NAs
+
+    # If zone is missing...append to include 0 zones
+    if(length(racs_per_zone) != zones){
+
+        missing_labels = setdiff(1:zones, as.integer(names(racs_per_zone)))
+        missing_vals = rep(0, length(missing_labels))
+        names(missing_vals) = missing_labels
+        racs_per_zone = c(racs_per_zone, missing_vals) # Could be slow
+    }
+
+    # Return ordered by zone
+    return(racs_per_zone[order(as.numeric(names(racs_per_zone)))])
+}
 
 assign_egg_production = function(raccoon_worm_vect, human_vect, zones){
     # From the raccoon worm array vector at time t and the human array
@@ -817,13 +842,16 @@ get_simulation_parameters = function(...){
     MONTH_AT_REPRO = 12
     DISPERSAL_AGE = 12 # months
 
+    # How many discrete zones in our egg zone array
+    ZONES = 10
+
     ## Ricker function for density-dependent recruitment of new babies
-    K_CAPACITY = 60 # "Carrying" capacity for raccoons. Need to figure out what
+    K_CAPACITY = rep(200 / ZONES, ZONES) # "Carrying" capacity for raccoons. Need to figure out what
                     # what is determining carrying capacity for the deterministic
                     # version of this model
 
     BIRTH_RATE = log(LITTER_SIZE) # Gives birth rate. Little r in ricker function
-    BETA = BIRTH_RATE / K_CAPACITY # From Encylopedia of Theoretical Ecology, pg. 634.
+    BETA = BIRTH_RATE / K_CAPACITY # From Encyclopedia of Theoretical Ecology, pg. 634.
 
     # PARASITE PARAMETERS
     ENCOUNTER_MEAN = 500 # Mean number of encountered eggs
@@ -847,8 +875,6 @@ get_simulation_parameters = function(...){
     # Time parameters: Each time step is a month
     TIME_STEPS = 100
 
-    # How many discrete zones in our egg zone array
-    ZONES = 10
 
     params=list(INIT_NUM_RACCOONS=INIT_NUM_RACCOONS,
                 DEATH_THRESHOLD=DEATH_THRESHOLD,
@@ -1005,6 +1031,10 @@ full_simulation = function(prms, init_arrays, cull_params=NULL,
         eggs_remaining = get_cumulative_egg_load(time - 1, eggproduction_array, 
                                             prms$EGG_DECAY)
 
+        # Total raccoons in a give zone at the previous time step
+        tot_racs_by_zone = get_zone_density(human_overlap_through_time[[time - 1]], 
+                                                prms$ZONES)
+
         # If time is >= management time begin management
         if(time >= management_time){
 
@@ -1067,12 +1097,13 @@ full_simulation = function(prms, init_arrays, cull_params=NULL,
 
                 age_array[time, rac] = age_now
 
-                tot_racs = sum(raccoon_dead_alive_array[time, ], na.rm=T)
-                new_babies_now = give_birth(age_now, time, tot_racs, 
-                                                        repro_able_vect[rac],
-                                                        prms$MONTH_AT_REPRO,
-                                                        prms$FIRST_REPRO_AGE,
-                                                        prms$LITTER_SIZE, prms$BETA)
+                new_babies_now = give_birth(age_now, time, 
+                                                    tot_racs_by_zone[zone_now], 
+                                                    repro_able_vect[rac],
+                                                    prms$MONTH_AT_REPRO,
+                                                    prms$FIRST_REPRO_AGE,
+                                                    prms$LITTER_SIZE, 
+                                                    prms$BETA[zone_now])
 
                 # Add new babies to array to assign human contacts later
                 babies_at_this_time_vect[rac] = new_babies_now
