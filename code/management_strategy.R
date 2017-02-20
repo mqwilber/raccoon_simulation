@@ -77,8 +77,8 @@ single_sim = TRUE # IF TRUE JUST RUNS A SINGLE SIMULATION
 
 if(single_sim){ # Run a single simulation
 
-    management_time = 100
-    time_steps = 80
+    management_time = 200
+    time_steps = 180
     params = get_simulation_parameters(TIME_STEPS=time_steps)
     init_arrays = get_init_arrays(params) # Load in init arrays
     all_res = full_simulation(params, init_arrays, 

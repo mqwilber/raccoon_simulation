@@ -480,6 +480,49 @@ assign_human_contacts = function(num_racs){
     return(runif(num_racs))
 }
 
+assign_zone_dispersal = function(k_capacity, zone_density){
+    # Assign raccoon dispersal based on carrying capacity and zone density
+    # Specifically, take the log ratio between k_capacity and current zone
+    # density for all zones.  If all ratios are equal, raccoon has an equal
+    # chance of dispersing to all zones.  If they are unequal, assign weights
+    # based on scaled ratios and the inverse normal CDF. 
+    #
+    # Parameters
+    # ----------
+    # k_capacity : vector, carrying capacity constants that are proportional
+    #               to carrying capacity for a given zone
+    # zone_density : vector, same length and k_capacity. Gives the raccoon
+    #                densities in a zone
+    #
+    # Returns
+    # -------
+    # : float, a predicted overlap threshold for a raccoon weighted by 
+    #         the space availability in all zones.
+
+    zones = length(k_capacity)
+    ratios = log(k_capacity / zone_density)
+
+    # If all ratios are the same, equal probability of dispersal
+    if(length(unique(ratios)) == 1){
+
+        weights = rep(1 / zones, zones)
+
+    } else{
+
+        ratios = scale(ratios)
+        probs = pnorm(ratios) # Inverse CDF of Normal
+        weights = probs / sum(probs) # Standardize to sum to one.
+
+    }
+
+    # Assign zone dispersal
+    dispersal_zone = sample(1:zones, 1, prob=weights)
+    human_overlap = runif(1, min=dispersal_zone/zones - 1/zones, max=dispersal_zone/zones)
+
+    #return(list(weights, ratios))
+    return(human_overlap)
+}
+
 get_raccoon_zone = function(overlap, zones){
     # Converts continuous raccoon overlap into discrete zone label 
     #
@@ -846,9 +889,7 @@ get_simulation_parameters = function(...){
     ZONES = 10
 
     ## Ricker function for density-dependent recruitment of new babies
-    K_CAPACITY = rep(200 / ZONES, ZONES) # "Carrying" capacity for raccoons. Need to figure out what
-                    # what is determining carrying capacity for the deterministic
-                    # version of this model
+    K_CAPACITY = rep(200 / ZONES, ZONES) # "Carrying" capacity for raccoons.
 
     BIRTH_RATE = log(LITTER_SIZE) # Gives birth rate. Little r in ricker function
     BETA = BIRTH_RATE / K_CAPACITY # From Encyclopedia of Theoretical Ecology, pg. 634.
@@ -1154,8 +1195,9 @@ full_simulation = function(prms, init_arrays, cull_params=NULL,
                 # }
 
                 # 4. Disperse if raccoon is 6
+                # TODO: Zone density-based on t or t + 1
                 if(age_now == prms$DISPERSAL_AGE){
-                    human_vect[rac] = assign_human_contacts(1)
+                    human_vect[rac] = assign_zone_dispersal(prms$K_CAPACITY, tot_racs_by_zone)
                 }
 
             } else { # Raccoon dead and its worms die
