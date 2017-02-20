@@ -98,8 +98,7 @@ kill_my_raccoon = function(worm_load, age, overlap, death_thresh, patho,
 
 get_cull_indices = function(cull_params, raccoon_dead_alive_vect, 
                                 age_vect, human_overlap_through_time_vect){
-    # Function for updating cull_params each time step to get per capita
-    # raccoon survival prob based on quota of raccoon to kill each time point
+    # Obtain indices of raccoons to be culled in a time step
     # 
     # Possible strategies are:
     # 1. `random`: Cull everybody equally
@@ -235,9 +234,73 @@ get_birth_control_indices = function(birth_control_params, repro_able_vect,
     return(birth_control_inds)
 }
 
+get_bait_indices = function(worm_control_params, raccoon_dead_alive_vect,
+                            human_overlap_through_time_vect) {
+    # Obtain indices of raccoons to be baited in a time step
+    # 
+    # Possible strategies are:
+    # 1. `random`: Bait everybody equally
+    #   - Additional parameters: `quota`: Number of raccoons to kill per time step
+    # 2. `human`: Only bait individuals with a human overlap greater than 
+    #              `overlap_threshold`
+    #   - Additional parameters: `quota`: absolute number of raccoons to kill
+    #                            `overlap_threshold`: Between 0 and 1,
+    #                             threshold above which you are culled
+    #
+    # Parameters
+    # ----------
+    # worm_control_params : list or NULL
+    # raccoon_dead_alive_vect: vector, vector specifying whether raccoons 
+    #      are dead or alive at time t - 1 
+    # age_vect : vector, specifying the ages of alive raccoons at year time
+    #                   t - 1
+    # human_overlap_through_time_vect: vector, specifies the human overlap value
+    #                   of alive raccoons at time t - 1.
+    # Returns
+    # --------
+    # : indices of raccoons to bait
+    #
+
+
+    if(is.null(worm_control_params)){
+        return(integer(0))
+    }
+
+    if(worm_control_params$strategy == "random"){
+
+        pop_inds = which((raccoon_dead_alive_vect != 0) & 
+                                        (!is.na(raccoon_dead_alive_vect)))
+
+    } else if(worm_control_params$strategy == "human"){
+
+        pop_inds = which(human_overlap_through_time_vect > 
+                                    worm_control_params$overlap_threshold)
+
+    } else {
+        stop(paste(worm_control_params$strategy, 
+                    "is not a recognized strategy. Try random or human"))
+    }
+
+
+    # Check if there are any raccoons to bait
+    if(length(pop_inds) > 1){
+
+        # 0.9 is default probability of initial bait not disappearing
+        bait_remaining = rbinom(1, worm_control_params$quota, 0.9)
+        worm_control_inds = unique(sample(pop_inds, bait_remaining, replace=TRUE))
+
+    } else {
+
+        worm_control_inds = pop_inds
+
+    }
+
+    return(worm_control_inds)
+
+}
 
 kill_raccoon_worms = function(previous_cohorts, death_thresh, death_slope, 
-                got_bait=0){
+                got_bait=FALSE){
     # Function to kill worms in raccoon based on worm age
     # Assuming a logistic function of survival prob of worms with cohort
     # age and then killing the worms based on a draw from a binomial
@@ -246,7 +309,7 @@ kill_raccoon_worms = function(previous_cohorts, death_thresh, death_slope,
     # ----------
     # previous_cohorts : vector, worms in raccoon at time - 1 time points
     # death_thresh, death_slope : see `get_simulation_parameters`
-    # got_bait : int, 0 or 1.  If raccoon gets bait worms are dead
+    # got_bait : bool, TRUE or FALSE.  If raccoon gets bait worms are dead
     #
     # Return
     # ------
@@ -266,54 +329,6 @@ kill_raccoon_worms = function(previous_cohorts, death_thresh, death_slope,
 
     updated_cohort[non_na_ind] = new_cohort
     return(updated_cohort)
-
-}
-
-# TODO: Revisit this after culling works
-picked_up_bait = function(overlap, worm_control_params=NULL){
-    # Function which determines whether or not a raccoon picks up 
-    # anti-helminthic bait. worm_control_params is a list that contains the 
-    # necessary parameters
-    # Worm_control_params must contain a slot 'strategy' that specifies the
-    # strategy that is being used to bait. If NULL, no bating is done.
-    #
-    # Possible strategies are:
-    # 1. `random`: Bait everybody equally
-    #   - Additional parameters: `distribution`: distribution of bait in the 
-    #                                        environment between 0 and 1
-    # 2. `human`: Only bait individuals with a human overlap greater than 
-    #              `overlap_threshold`
-    #   - Additional parameters: `distribution`: Distribution of bait between 0 and 1
-    #                            `overlap_threshold`: Between 0 and 1,
-    #                             threshold above which you are baited
-    #
-
-
-     # Clear worms based on strategy
-    if(!is.null(worm_control_params)){
-
-        if(worm_control_params$strategy == "random"){
-
-            got_bait = rbinom(1, 1, worm_control_params$distribution)
-
-        } else if(worm_control_params$strategy == "human"){
-
-            if(is.null(worm_control_params$overlap_threshold)){
-                stop("Provide overlap_threshold")
-            }
-
-            got_bait = ifelse(overlap > worm_control_params$overlap_threshold, 
-                    rbinom(1, 1, worm_control_params$distribution), 0)
-
-        } else {
-            stop(paste(worm_control_params$strategy, "is not a recognized strategy. Try random or human"))
-
-        }
-    } else{
-        got_bait = 0
-    }
-
-    return(got_bait)
 
 }
 
@@ -447,7 +462,7 @@ get_eprob = function(eggs_environ, egg_contact_param){
     # Calculating our encounter probability from previous prevalences
     #    
     # Parameters
-    # ----------
+    # ---------- 
     # eggs_environ: float, zone-dependent eggs in environment
     # egg_contact_param: see `get_simulation_parameters`
     #
@@ -1007,11 +1022,13 @@ full_simulation = function(prms, init_arrays, cull_params=NULL,
             # If picked for birth control, can't have babies
             repro_able_vect[birth_control_indices] = 0 
 
-            tworm_control_params = worm_control_params 
+            worm_control_indices = get_bait_indices(worm_control_params,
+                                                    raccoon_dead_alive_array[time - 1, ],
+                                                    human_overlap_through_time[[time - 1]])
         } else{
             birth_control_indices = integer(0) 
             cull_indices = integer(0)
-            tworm_control_params = NULL 
+            worm_control_indices = integer(0) 
         }
 
         # Loop through raccoons but only through raccoons that are alive
@@ -1062,19 +1079,25 @@ full_simulation = function(prms, init_arrays, cull_params=NULL,
                 new_babies = new_babies + new_babies_now
 
                 # 2. Kill old worms for each possible source of worms
-                got_bait = picked_up_bait(overlap_now, tworm_control_params)
-
-
                 previous_cohorts = infra_worm_array[[rac]][time - 1, 1:(time - 1)]
                 new_cohort = kill_raccoon_worms(previous_cohorts,
                                                     prms$WORM_SURV_TRESH,
                                                     prms$WORM_SURV_SLOPE,
-                                                    got_bait=got_bait)
+                                                    got_bait=any(rac == worm_control_indices))
 
                 # Assign previous cohort to current cohort
                 infra_worm_array[[rac]][time, 1:(time - 1)] = new_cohort
 
                 # 3. Pick up eggs or pick up rodents depending on age
+
+                # if(any(rac == worm_control_indices)){
+
+                # infra_worm_array[[rac]][time, time] = 0
+                # raccoon_worm_array[time, rac] = sum(infra_worm_array[[rac]][time, ], na.rm=T)
+
+
+                # } else{
+
                 if(age_now <= prms$AGE_EGG_RESISTANCE){ # Only pick up worms from eggs
 
                     worms_acquired = pick_up_eggs(prms$ENCOUNTER_MEAN,
@@ -1096,6 +1119,8 @@ full_simulation = function(prms, init_arrays, cull_params=NULL,
 
                 infra_worm_array[[rac]][time, time] = worms_acquired
                 raccoon_worm_array[time, rac] = sum(infra_worm_array[[rac]][time, ], na.rm=T)
+
+                # }
 
                 # 4. Disperse if raccoon is 6
                 if(age_now == prms$DISPERSAL_AGE){

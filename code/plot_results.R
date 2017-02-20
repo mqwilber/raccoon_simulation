@@ -3,7 +3,7 @@ library(ggplot2)
 library(data.table)
 
 # Get results folders
-folder_names = Sys.glob("../results/*")
+folder_names = Sys.glob("../results/worm_control_*/")
 
 # In each result folder, extract all mean and var results
 mean_arrays = list()
@@ -43,6 +43,8 @@ for(varname in vars){
 
 # Plot the simulation results
 
+#quota = 0:10
+quota_vals = log10(c(1, 10, 100, 1000, 10000)) # Use for worm control
 plotting_df = do.call(rbind, plotting_df)
 plotting_df = plotting_df[plotting_df$metric != "mean_worm_pop", ]
 gp = ggplot(plotting_df, aes(x=quota, y=log10(mean_value + 1), color=strategy)) + 
@@ -51,8 +53,8 @@ gp = ggplot(plotting_df, aes(x=quota, y=log10(mean_value + 1), color=strategy)) 
                     #                 ymax=log10(mean_value  + 1 + sd_value),
                     #                 color=strategy), alpha=0.3) +
                     facet_wrap(~metric) + theme_bw() + xlab("Quota") + 
-                    ylab("log(population) or log(metric)") +
-                    scale_x_continuous(breaks=0:10)
+                    ylab("log(population) or log(metric)") + ylim(c(0, 3)) +
+                    scale_x_continuous(breaks=quota_vals)
 
 gp2 = ggplot(plotting_df, aes(x=quota, y=mean_value, color=strategy)) + 
                     geom_line() +
@@ -60,7 +62,6 @@ gp2 = ggplot(plotting_df, aes(x=quota, y=mean_value, color=strategy)) +
                     #                 ymax=mean_value + sd_value,
                     #                 color=strategy), alpha=0.3) +
                     facet_wrap(~metric) + theme_bw() + xlab("Quota") + 
-                    ylab("log(population) or log(metric)") +
-                    scale_x_continuous(breaks=0:10)
+                    ylab("Population or metric") + ylim(c(0, 550)) +
+                    scale_x_continuous(breaks=quota_vals)
 
-gp
