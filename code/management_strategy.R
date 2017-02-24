@@ -65,7 +65,6 @@ worm_control_params = list(strategy="random", quota=10000, overlap_threshold=0.8
 # Worm control, this one might not be quota based.  However, for comparison
 # purposes it might make sense to implement this one as a quota as well...
 
-quotas = 0:10
 SIMS = 50
 management_time = 50
 time_steps = 220
@@ -91,40 +90,41 @@ if(single_sim){ # Run a single simulation
 } else { # Run a full simulation
     
     management_scenarios = 
-                # FULL MANAGEMENT LIST
-                # list(cull_only=list(
-                #                cull_params=
-                #                     list("human"=c(0.5), 
-                #                          "age"=c(12), 
-                #                          "random"=c(1)),
-                #                birth_control_params=NULL,
-                #                worm_control_params=NULL),
+                list(cull_only=list(
+                               cull_params=
+                                    list("human"=c(0.1, 0.5, 0.9), 
+                                         "age"=c(3, 12, 25), 
+                                         "random"=c(1)),
+                               birth_control_params=NULL,
+                               worm_control_params=NULL),
 
-                #      birth_control_only=list(
-                #                 cull_params=NULL,
-                #                 birth_control_params=
-                #                      list("human"=c(0.7),
-                #                           "random"=c(1)), 
-                #                 worm_control_params=NULL),
-
-                #      worm_control_only=list(
-                #                 cull_params=NULL,
-                #                 birth_control_params=NULL,
-                #                 worm_control_params=
-                #                      list("human"=c(0.1),
-                #                           "random"=c(1))))
-
-                list(
+                     birth_control_only=list(
+                                cull_params=NULL,
+                                birth_control_params=
+                                     list("human"=c(0.1, 0.5, 0.9),
+                                          "random"=c(1)), 
+                                worm_control_params=NULL),
 
                      worm_control_only=list(
                                 cull_params=NULL,
                                 birth_control_params=NULL,
                                 worm_control_params=
-                                     list("human"=seq(0.1, 0.9, length=9),
-                                          "random"=c(1)))) 
+                                     list("human"=c(0.1, 0.5, 0.9),
+                                          "random"=c(1))))
+
+                # list(
+
+                #      worm_control_only=list(
+                #                 cull_params=NULL,
+                #                 birth_control_params=NULL,
+                #                 worm_control_params=
+                #                      list("human"=seq(0.1, 0.9, length=9),
+                #                           "random"=c(1)))) 
 
 
-    for(scenario in management_scenarios) {
+    for(scenario_nm in names(management_scenarios)) {
+
+        scenario = management_scenarios[[scenario_nm]]
 
         # Assign scenario list to environment: assigns cull_params, birth_control_params, worm_control_params
         list2env(scenario, envir=environment())
@@ -137,12 +137,21 @@ if(single_sim){ # Run a single simulation
             }
         }
 
+        # Set quotas for the correct scenario
+        if(scenario_nm == "worm_control_only"){
+            quotas = c(0, 1, 10, 100, 1000, 10000)
+        } else{
+            quotas = 1:10
+        }
+
         # Loop through different management strategies within a current action
         for(strategy in names(scenario[[current_action]])) {
 
             print(paste("Beginning", strategy, "for", current_action))
 
             controls = scenario[[current_action]][[strategy]]
+
+
 
             for(control in controls){ # Loops controls on the strategy
 

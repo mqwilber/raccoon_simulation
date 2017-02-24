@@ -500,7 +500,9 @@ assign_zone_dispersal = function(k_capacity, zone_density){
     #         the space availability in all zones.
 
     zones = length(k_capacity)
-    ratios = log(k_capacity / zone_density)
+
+    # Add 0.1 to correct if no raccoons are in the zone
+    ratios = log(k_capacity / (zone_density + 0.1))
 
     # If all ratios are the same, equal probability of dispersal
     if(length(unique(ratios)) == 1){
@@ -509,7 +511,7 @@ assign_zone_dispersal = function(k_capacity, zone_density){
 
     } else{
 
-        ratios = scale(ratios)
+        ratios = scale(ratios) # Scale to make ratios comparable
         probs = pnorm(ratios) # Inverse CDF of Normal
         weights = probs / sum(probs) # Standardize to sum to one.
 
@@ -889,7 +891,7 @@ get_simulation_parameters = function(...){
     ZONES = 10
 
     ## Ricker function for density-dependent recruitment of new babies
-    K_CAPACITY = rep(200 / ZONES, ZONES) # "Carrying" capacity for raccoons.
+    K_CAPACITY = 200*(1:ZONES / sum(1:ZONES)) # rep(200 / ZONES, ZONES) # "Carrying" capacity for raccoons.
 
     BIRTH_RATE = log(LITTER_SIZE) # Gives birth rate. Little r in ricker function
     BETA = BIRTH_RATE / K_CAPACITY # From Encyclopedia of Theoretical Ecology, pg. 634.
@@ -984,7 +986,11 @@ get_init_arrays = function(prms){
     initial_age_vector = rep(24, prms$INIT_NUM_RACCOONS)
     age_array = array(NA, dim=c(prms$TIME_STEPS + 1, prms$INIT_NUM_RACCOONS))
     age_array[1, ] = initial_age_vector
-    human_vect = assign_human_contacts(prms$INIT_NUM_RACCOONS)
+
+    # Assign raccoons to zones based on carrying capacity of zones
+    human_vect = sapply(1:prms$INIT_NUM_RACCOONS, 
+            function(x) assign_zone_dispersal(prms$K_CAPACITY, rep(0, prms$ZONES)))
+
     repro_able_vect = rep(1, prms$INIT_NUM_RACCOONS)
     human_overlap_through_time = list()
     human_overlap_through_time[[1]] = human_vect
@@ -1195,9 +1201,10 @@ full_simulation = function(prms, init_arrays, cull_params=NULL,
                 # }
 
                 # 4. Disperse if raccoon is 6
-                # TODO: Zone density-based on t or t + 1
+                # TODO: Zone density-based on t or t - 1
                 if(age_now == prms$DISPERSAL_AGE){
-                    human_vect[rac] = assign_zone_dispersal(prms$K_CAPACITY, tot_racs_by_zone)
+                    human_vect[rac] = assign_zone_dispersal(prms$K_CAPACITY, 
+                                            tot_racs_by_zone)
                 }
 
             } else { # Raccoon dead and its worms die
