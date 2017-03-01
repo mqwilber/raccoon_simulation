@@ -29,28 +29,43 @@ run_and_extract_results = function(i, quota, management_time,
                                 management_time=management_time)
 
     # Extract min, max rac pop sizes
+    decrement = 24 # Use the first two years of the simulation
     pop_traj = rowSums(all_res$raccoon_dead_alive_array, na.rm=T)
     tot_steps = length(pop_traj)
-    max_rac_pop = max(pop_traj[(tot_steps - 12):tot_steps])
-    min_rac_pop = min(pop_traj[(tot_steps - 12):tot_steps])
-    mean_rac_pop = mean(pop_traj[(tot_steps - 12):tot_steps])
+    max_rac_pop = max(pop_traj[(tot_steps - decrement):tot_steps])
+    min_rac_pop = min(pop_traj[(tot_steps - decrement):tot_steps])
+    mean_rac_pop = mean(pop_traj[(tot_steps - decrement):tot_steps])
 
     # Extract min, max, worm pop sizes
     worm_pop_traj = rowSums(all_res$raccoon_worm_array, na.rm=T)
-    max_worm_pop = max(worm_pop_traj[(tot_steps - 12):tot_steps])
-    min_worm_pop = min(worm_pop_traj[(tot_steps - 12):tot_steps])
-    mean_worm_pop = mean(worm_pop_traj[(tot_steps - 12):tot_steps])
+    max_worm_pop = max(worm_pop_traj[(tot_steps - decrement):tot_steps])
+    min_worm_pop = min(worm_pop_traj[(tot_steps - decrement):tot_steps])
+    mean_worm_pop = mean(worm_pop_traj[(tot_steps - decrement):tot_steps])
 
-    # Human risk # UPDATE THIS
+    # Human risk
     human_risk = get_human_risk_metric(all_res$eggproduction_array, params$EGG_DECAY)
-    max_human_risk = max(human_risk[(tot_steps - 12):tot_steps])
-    min_human_risk = min(human_risk[(tot_steps - 12):tot_steps])
-    mean_human_risk = mean(human_risk[(tot_steps - 12):tot_steps])
+    max_human_risk = max(human_risk[(tot_steps - decrement):tot_steps])
+    min_human_risk = min(human_risk[(tot_steps - decrement):tot_steps])
+    mean_human_risk = mean(human_risk[(tot_steps - decrement):tot_steps])
+
+    # Prevalence measures
+    prev_traj = get_prevalence(all_res$raccoon_worm_array)
+    max_prev = max(prev_traj[(tot_steps - decrement):tot_steps])
+    min_prev = min(prev_traj[(tot_steps - decrement):tot_steps])
+    mean_prev = mean(prev_traj[(tot_steps - decrement):tot_steps])
+
+    # Prevalence measures
+    intensity_traj = get_mean_intensity(all_res$raccoon_worm_array)
+    max_intensity = max(intensity_traj[(tot_steps - decrement):tot_steps])
+    min_intensity = min(intensity_traj[(tot_steps - decrement):tot_steps])
+    mean_intensity = mean(intensity_traj[(tot_steps - decrement):tot_steps])
 
 
     return(c(min_rac_pop, mean_rac_pop, max_rac_pop, 
              min_worm_pop, mean_worm_pop, max_worm_pop,
-             min_human_risk, mean_human_risk, max_human_risk))
+             min_human_risk, mean_human_risk, max_human_risk,
+             min_prev, mean_prev, max_prev,
+             min_intensity, mean_intensity, max_intensity))
 
 }
 
@@ -66,12 +81,14 @@ worm_control_params = list(strategy="random", quota=10000, overlap_threshold=0.8
 # purposes it might make sense to implement this one as a quota as well...
 
 SIMS = 50
-management_time = 50
-time_steps = 220
+management_time = 100
+time_steps = 400
 col_names = c("min_rac_pop", "mean_rac_pop", "max_rac_pop", 
              "min_worm_pop", "mean_worm_pop", "max_worm_pop",
-             "min_human_risk", "mean_human_risk", "max_human_risk")
-single_sim = TRUE # IF TRUE JUST RUNS A SINGLE SIMULATION 
+             "min_human_risk", "mean_human_risk", "max_human_risk",
+	         "min_prev", "mean_prev", "max_prev",
+	         "min_intensity", "mean_intensity", "max_intensity")
+single_sim = FALSE # IF TRUE JUST RUNS A SINGLE SIMULATION 
 
 
 if(single_sim){ # Run a single simulation
@@ -139,9 +156,9 @@ if(single_sim){ # Run a single simulation
 
         # Set quotas for the correct scenario
         if(scenario_nm == "worm_control_only"){
-            quotas = c(0, 1, 10, 100, 1000, 10000)
+            quotas = c(0, 1, 10, 100, 1000, 10000, 100000)
         } else{
-            quotas = 1:10
+            quotas = c(0:10, 20, 50, 100, 200)
         }
 
         # Loop through different management strategies within a current action
@@ -176,8 +193,8 @@ if(single_sim){ # Run a single simulation
 
                     cull_matrix = do.call(rbind, sim_vals)
 
-                    cull_means = colMeans(cull_matrix)
-                    cull_vars = apply(cull_matrix, 2, sd)
+                    cull_means = colMeans(cull_matrix, na.rm=TRUE)
+                    cull_vars = apply(cull_matrix, 2, sd, na.rm=TRUE)
                     names(cull_means) = col_names
                     names(cull_vars) = col_names
                     sim_mean_results[[j]] = cull_means

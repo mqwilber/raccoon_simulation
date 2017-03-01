@@ -753,6 +753,18 @@ get_prevalence = function(raccoon_worm_array){
     return(apply(raccoon_worm_array, 1, prev_fxn))
 }
 
+get_mean_intensity = function(raccoon_worm_array){
+    # Get mean intensity (not including 0s) for worm array
+    # Input : the raccoon worm array
+    # Returns : prevalence for all time points 
+
+    intensity_fxn = function(x) {
+        return(sum(x[x > 0], na.rm=T) / sum(!is.na(x[x > 0])))
+    }
+    return(apply(raccoon_worm_array, 1, intensity_fxn))
+
+}
+
 
 ## Functions to summarize simulation output ##
 
@@ -805,7 +817,8 @@ age_intensity_full = function(raccoon_worm_array, age_array, range){
     full_dat = as.data.table(data.frame(list(age=flat_age, worms=flat_worms)))
     means = full_dat[, list(mean_worms=mean(worms, na.rm=T)), by="age"]
     means = means[!is.na(means$age), ]
-    ggplot(means, aes(x=age, y=mean_worms)) + geom_point() + geom_line()
+    tplot = ggplot(means, aes(x=age, y=mean_worms)) + geom_point() + geom_line()
+    return(tplot)
 }
 
 age_prevalence_plot = function(raccoon_worm_array, age_array, range){
