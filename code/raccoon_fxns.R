@@ -96,21 +96,24 @@ kill_my_raccoon = function(worm_load, age, overlap, death_thresh, patho,
 
 }
 
-get_cull_indices = function(cull_params, raccoon_dead_alive_vect, 
+get_trap_indices = function(management_params, raccoon_dead_alive_vect,
                                 age_vect, human_overlap_through_time_vect){
-    # Obtain indices of raccoons to be culled in a time step
+    # Obtain indices of raccoons to be trapped in a time step
     # 
     # Possible strategies are:
-    # 1. `random`: Cull everybody equally
-    #   - Additional parameters: `quota`: Number of raccoons to kill per time step
-    # 2. `age`: Only cull juveniles i.e. less than a year old
-    #   - Additional parameters: `quota`: Number of raccoons to kill per time step
-    #   -                        `age`: age in months below which you cull raccoons
-    # 3. `human`: Only cull individuals with a human overlap greater than 
+    # 1. `random`: Keep all raccoons that are trapped
+    #   - Additional parameters: `quota`: Number of traps set out per time step
+    # 2. `age`: Only keep trapped that are < a certain age i.e. less than a year old
+    #   - Additional parameters: `quota`: Number traps per time step
+    #   -                        `age`: age in months below which you keep the 
+    #                                   raccoons you trap
+    #                            `success`: Probability of trapping success
+    # 3. `human`: Only trap in regions with a certain human overlap. 
+    #               individuals with a human overlap greater than 
     #              `overlap_threshold`
-    #   - Additional parameters: `quota`: absolute number of raccoons to kill
+    #   - Additional parameters: `quota`: Number of traps to set out
     #                            `overlap_threshold`: Between 0 and 1,
-    #                             threshold above which you are culled
+    #                             The region in which you are trapping
     #
     # Parameters
     # ----------
@@ -126,112 +129,52 @@ get_cull_indices = function(cull_params, raccoon_dead_alive_vect,
     # : indices of raccoons to cull
     #
 
-
-    if(is.null(cull_params)){
+    if(is.null(management_params)){
         return(integer(0)) # return an empty vector
     }
 
-    if(cull_params$strategy == "random"){
+    if(management_params$strategy == "random" | management_params$strategy == "age"){
 
-        # Only choosing currently alive raccoons to cull
+        # Only choosing currently alive raccoons to trap.
         pop_inds = which((raccoon_dead_alive_vect != 0) & 
                                         (!is.na(raccoon_dead_alive_vect)))
 
-    } else if(cull_params$strategy == "age"){
+    } else if(management_params$strategy == "human"){
 
-        # Only choosing alive juveniles (< 12 months)
-        pop_inds = which((age_vect < cull_params$age) & (!is.na(age_vect)))
-      
-    } else if(cull_params$strategy == "human"){
-
-        if(is.null(cull_params$overlap_threshold)){
+        if(is.null(management_params$overlap_threshold)){
             stop("Provide overlap_threshold")
         }
 
         # NOTE: Using a continuous overlap with discrete zones. Probably should
         # chose overlap_threshold at 0.0, 0.1, 0.2 ... 0.9.
-        pop_inds = which(human_overlap_through_time_vect > cull_params$overlap_threshold)
+        pop_inds = which(human_overlap_through_time_vect > management_params$overlap_threshold)
 
     } else{
-        stop(paste(cull_params$strategy, "is not a recognized strategy. Try random, age, or human"))
+        stop(paste(management_params$strategy, "is not a recognized strategy. Try random, age, or human"))
     }
-
 
     # Check if there are any raccoons to cull.
     if(length(pop_inds) > 1){
+
+        # Traps only catch a random number of raccoons. TODO: Update trap success probability
+        total_caught = rbinom(1, management_params$quota, 1)
 
         # Cull either quota or how ever many individuals are there < quota. 
-        cull_inds = sample(pop_inds, min(c(length(pop_inds), cull_params$quota)))
+        trap_inds = sample(pop_inds, min(c(length(pop_inds), total_caught)))
 
-    } else{
-        cull_inds = pop_inds # Empty vector
-    }
+        # Throw out raccoons that do not conform to age requirement
+        if(management_params$strategy == "age"){
 
-    return(cull_inds)
-
-}
-
-
-get_birth_control_indices = function(birth_control_params, repro_able_vect, 
-                                    human_overlap_through_time_vect){
-    # Obtain indices of raccoons that will receive birth control
-    #
-    # Parameters
-    # ----------
-    # birth_control_params : list, parameters for birth control
-    #                       `strategy`: "random" - Randomly apply birth control
-    #                                   "human" - Only apply birth control
-    #                                    to certain overlap zones
-    #                        `quota`: How many raccoons (max) should get
-    #                           birth control per month. Raccoons that already
-    #                           have birth control are still caught. Integer.
-    #                         `overlap_threshold`: Raccoons in this human 
-    #                            overlap zone or greater are caught and given 
-    #                            birth control. Between 0 and 1.
-    # repro_able_vect : vector, containing 0 (can't reproduce), 
-    #                    1 (can reproduce) or NA (dead)
-    # human_overlap_through_time_vect: vector, specifies the human overlap value
-    #                   of alive raccoons at time t - 1.
-    #
-    # Returns
-    # -------
-    # indices of raccoons to give birth control too
-
-    # No culling if birth control is null
-    if(is.null(birth_control_params)){ 
-        return(integer(0))
-    }
-
-    if(birth_control_params$strategy == "random"){
-
-        pop_inds = which(!is.na(repro_able_vect))
-
-    } else if(birth_control_params$strategy == "human"){
-
-        if(is.null(birth_control_params$overlap_threshold)){
-            stop("Provide overlap_threshold")
+            trap_inds = trap_inds[age_vect[trap_inds] < management_params$age]
+            print(paste("Trapped", length(trap_inds), "raccoons"))
         }
 
-        pop_inds = which(human_overlap_through_time_vect > 
-                                    birth_control_params$overlap_threshold)
-
     } else{
-        stop(paste(birth_control_params$strategy, 
-                    "is not a recognized strategy. Try random or human"))
+        trap_inds = pop_inds # Empty vector
     }
 
-    # Check if there are any raccoons to cull.
-    if(length(pop_inds) > 1){
+    return(trap_inds)
 
-        # Sterilize either quota or how ever many individuals are there < quota. 
-        birth_control_inds = sample(pop_inds, min(c(length(pop_inds), 
-                                                  birth_control_params$quota)))
-
-    } else{
-        birth_control_inds = pop_inds # Empty vector
-    }
-
-    return(birth_control_inds)
 }
 
 get_bait_indices = function(worm_control_params, raccoon_dead_alive_vect,
@@ -598,7 +541,7 @@ assign_egg_production = function(raccoon_worm_vect, human_vect, zones){
 
     missing_labels = setdiff(1:zones, grouped_data$zone_num)
 
-    # Only do this is we are not missing any labels
+    # Only do this is we are missing some labels
     if(length(missing_labels) != 0){
 
         dt_missing = data.table(zone_num=missing_labels, pa_sums=0)
@@ -776,7 +719,7 @@ plot_pop_traj = function(raccoon_dead_alive_array){
         ylim(c(0, max(dat$population)))
 }
 
-plot_age_hist = function(age_array, range){
+plot_age_hist = function(age_array, range, cut=12){
 
     # Plot the raccoon age distribution at any time point with violin plots
 
@@ -788,7 +731,8 @@ plot_age_hist = function(age_array, range){
     names(trun_age) = range
     stacked_data = stack(trun_age)
     stacked_data_trun = stacked_data[!is.na(stacked_data$values), ]
-    ggplot(stacked_data_trun, aes(as.factor(ind), values)) + geom_boxplot()
+    ggplot(stacked_data_trun, aes(as.factor(ind), values)) + geom_violin() + 
+            theme_bw()
 
 }
 
@@ -1098,16 +1042,16 @@ full_simulation = function(prms, init_arrays, cull_params=NULL,
         # If time is >= management time begin management
         if(time >= management_time){
 
-            cull_indices = get_cull_indices(cull_params,
+            cull_indices = get_trap_indices(cull_params,
                                          raccoon_dead_alive_array[time - 1, ],
                                          age_array[time - 1, ], 
                                          human_overlap_through_time[[time - 1]])
 
             # Pick individuals for birth control
-            birth_control_indices = get_birth_control_indices(
-                                            birth_control_params,
-                                            repro_able_vect,
-                                            human_overlap_through_time[[time - 1]])
+            birth_control_indices = get_trap_indices(birth_control_params,
+                                         raccoon_dead_alive_array[time - 1, ],
+                                         age_array[time - 1, ], 
+                                         human_overlap_through_time[[time - 1]])
 
             # If picked for birth control, can't have babies
             repro_able_vect[birth_control_indices] = 0 
