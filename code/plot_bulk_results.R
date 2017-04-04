@@ -43,7 +43,7 @@ for(combo in names(folder_combos)){
         if(length(grep("worm_control", fsplit)) == 1) {
             quotas = c(0, log10(c(1, 10, 100, 1000, 10000, 100000)) + 1)
         } else{
-            quotas = log10(c(1:10, 20, 50, 100, 200))
+            quotas = log10(c(0:10, 20, 50, 100, 200))
         }
 
         for(mfile in mean_files){
@@ -61,8 +61,8 @@ for(combo in names(folder_combos)){
             colnames(mean_arrays[[paste(fsplit, splt[length(splt)], sep="_")]]) = col_names
             colnames(var_arrays[[paste(fsplit, splt[length(splt)], sep="_")]]) = col_names
 
-            mean_arrays[[paste(fsplit, splt[length(splt)], sep="_")]][, "mean_intensity"] = 
-                        mean_arrays[[paste(fsplit, splt[length(splt)], sep="_")]][, 'mean_worm_pop'] / mean_arrays[[paste(fsplit, splt[length(splt)], sep="_")]][, 'mean_rac_pop']
+            # mean_arrays[[paste(fsplit, splt[length(splt)], sep="_")]][, "mean_intensity"] = 
+            #             mean_arrays[[paste(fsplit, splt[length(splt)], sep="_")]][, 'mean_worm_pop'] / mean_arrays[[paste(fsplit, splt[length(splt)], sep="_")]][, 'mean_rac_pop']
         }
 
     }

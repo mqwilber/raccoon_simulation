@@ -68,10 +68,32 @@ for(stratnm in names(strats)){
                         theme_bw()
     human_plot
 
+    prev = get_prevalence(all_res$raccoon_worm_array)
+    prev_dat = data.frame(prev=prev, time=time)
+    prev_plot = ggplot(data=prev_dat, aes(x=time, y=prev)) + geom_line(color="blue") + 
+                    xlab("Years") + ylab("Prevalence") +
+                    geom_vline(xintercept=management_time / 12, color="black", linetype="dashed") + 
+                    geom_rect(aes(xmin=time[length(time)] - 2, 
+                                  xmax=time[length(time)], 
+                                  ymax=1, ymin=0), fill="light gray", alpha=0.02) +
+                    ylim(0, 1) +
+                    theme_bw()
+
+    intensity = get_mean_intensity(all_res$raccoon_worm_array)
+    intensity_dat = data.frame(intensity=intensity, time=time)
+    intensity_plot = ggplot(data=prev_dat, aes(x=time, y=intensity)) + geom_line(color="purple") + 
+                    xlab("Years") + ylab("Mean intensity") +
+                    geom_vline(xintercept=management_time / 12, color="black", linetype="dashed") + 
+                    geom_rect(aes(xmin=time[length(time)] - 2, 
+                                  xmax=time[length(time)], 
+                                  ymax=30, ymin=0), fill="light gray", alpha=0.02) +
+                    ylim(0, 30) +
+                    theme_bw()
+
     # Save the plots all together
-    jpeg(paste("../results/plots/example_trajectories_", stratnm,  ".jpg", sep=""), width=5, height=6)
-    grid.arrange(pop_plot, worm_plot, human_plot, nrow=3)
-    dev.off()
+    grid.arrange(pop_plot, worm_plot, human_plot, prev_plot, intensity_plot, nrow=3, ncol=2)
+    g = arrangeGrob(pop_plot, worm_plot, human_plot, prev_plot, intensity_plot, nrow=3, ncol=2)
+    ggsave(paste("../results/plots/example_trajectories_", stratnm,  ".jpg", sep=""), plot=g, width=10, height=6)
 }
 
 
