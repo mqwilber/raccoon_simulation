@@ -73,7 +73,7 @@ run_and_extract_results = function(i, quota, management_time,
 ## RUNNING SIMULATION ###
 
 # Simulation parameters
-cull_params = list(strategy="age", quota=20, overlap_threshold=0.8, age=12)
+cull_params = list(strategy="human", quota=600, overlap_threshold=0.9, age=12)
 birth_control_params = list(strategy="random", quota=10, overlap_threshold=0.7)
 worm_control_params = list(strategy="random", quota=10000, overlap_threshold=0.8)
 

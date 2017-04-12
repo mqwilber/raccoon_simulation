@@ -138,6 +138,7 @@ get_trap_indices = function(management_params, raccoon_dead_alive_vect,
         # Only choosing currently alive raccoons to trap.
         pop_inds = which((raccoon_dead_alive_vect != 0) & 
                                         (!is.na(raccoon_dead_alive_vect)))
+        density_measure = 1 # The whole world
 
     } else if(management_params$strategy == "human"){
 
@@ -149,15 +150,26 @@ get_trap_indices = function(management_params, raccoon_dead_alive_vect,
         # chose overlap_threshold at 0.0, 0.1, 0.2 ... 0.9.
         pop_inds = which(human_overlap_through_time_vect > management_params$overlap_threshold)
 
+        density_measure = 1 - management_params$overlap_threshold # Only trapping in part of the world
+
     } else{
         stop(paste(management_params$strategy, "is not a recognized strategy. Try random, age, or human"))
     }
 
+
     # Check if there are any raccoons to cull.
     if(length(pop_inds) > 1){
 
-        # Traps only catch a random number of raccoons. TODO: Update trap success probability
-        total_caught = rbinom(1, management_params$quota, 1)
+        rac_density = length(pop_inds) / density_measure
+
+        # Functional response for relating trap probability to raccoon density (Type I)
+        # This gives a trap prob of approx 0.0215 at 500 raccoons per world
+        trap_prob = 1 - exp(-(rac_density * 4.346898e-05))
+
+        # Traps only catch a random number of raccoons.
+        total_caught = rbinom(1, management_params$quota, trap_prob)
+
+        print(c(rac_density, trap_prob, total_caught))
 
         # Cull either quota or how ever many individuals are there < quota. 
         trap_inds = sample(pop_inds, min(c(length(pop_inds), total_caught)))
