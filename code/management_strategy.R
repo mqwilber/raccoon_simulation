@@ -73,7 +73,7 @@ run_and_extract_results = function(i, quota, management_time,
 ## RUNNING SIMULATION ###
 
 # Simulation parameters
-cull_params = list(strategy="human", quota=600, overlap_threshold=0.9, age=12)
+cull_params = list(strategy="random", quota=200, overlap_threshold=0.4, age=12)
 birth_control_params = list(strategy="random", quota=10, overlap_threshold=0.7)
 worm_control_params = list(strategy="random", quota=10000, overlap_threshold=0.8)
 
@@ -93,8 +93,8 @@ single_sim = TRUE # IF TRUE JUST RUNS A SINGLE SIMULATION
 
 if(single_sim){ # Run a single simulation
 
-    management_time = 50
-    time_steps = 180
+    management_time = 250
+    time_steps = 200
     params = get_simulation_parameters(TIME_STEPS=time_steps)
     init_arrays = get_init_arrays(params) # Load in init arrays
     all_res = full_simulation(params, init_arrays, 

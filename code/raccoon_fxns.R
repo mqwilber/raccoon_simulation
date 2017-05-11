@@ -138,7 +138,10 @@ get_trap_indices = function(management_params, raccoon_dead_alive_vect,
         # Only choosing currently alive raccoons to trap.
         pop_inds = which((raccoon_dead_alive_vect != 0) & 
                                         (!is.na(raccoon_dead_alive_vect)))
-        density_measure = 1 # The whole world
+
+        # 20 km^2 is the size of the whole world. And we adjusted K_CAPACITY to
+        # give realistic densities in this world given variation in human overlap
+        trapping_area = 20 
 
     } else if(management_params$strategy == "human"){
 
@@ -150,7 +153,10 @@ get_trap_indices = function(management_params, raccoon_dead_alive_vect,
         # chose overlap_threshold at 0.0, 0.1, 0.2 ... 0.9.
         pop_inds = which(human_overlap_through_time_vect > management_params$overlap_threshold)
 
-        density_measure = 1 - management_params$overlap_threshold # Only trapping in part of the world
+        # 20 km^2 is the size of the whole world. And we adjusted K_CAPACITY to
+        # give realistic densities in this world given variation in human overlap
+        # Only looking at a portion of the 20 km^2 world so scale accordingly
+        trapping_area = (1 - management_params$overlap_threshold) * 20
 
     } else{
         stop(paste(management_params$strategy, "is not a recognized strategy. Try random, age, or human"))
@@ -160,16 +166,17 @@ get_trap_indices = function(management_params, raccoon_dead_alive_vect,
     # Check if there are any raccoons to cull.
     if(length(pop_inds) > 1){
 
-        rac_density = length(pop_inds) / density_measure
+        rac_density = length(pop_inds) / trapping_area
 
         # Functional response for relating trap probability to raccoon density (Type I)
-        # This gives a trap prob of approx 0.0215 at 500 raccoons per world
-        trap_prob = 1 - exp(-(rac_density * 4.346898e-05))
+        # Number is from a regression model fit to capture data Sara collected.
+        # Data in trapping.csv and script saved as fit_trapping_function.R
+        trap_prob = 1 - exp(-(rac_density * 0.0030545))
 
         # Traps only catch a random number of raccoons.
         total_caught = rbinom(1, management_params$quota, trap_prob)
 
-        print(c(rac_density, trap_prob, total_caught))
+        print(c(length(pop_inds), rac_density, trap_prob, total_caught))
 
         # Cull either quota or how ever many individuals are there < quota. 
         trap_inds = sample(pop_inds, min(c(length(pop_inds), total_caught)))
