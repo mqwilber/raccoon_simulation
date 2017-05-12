@@ -76,6 +76,7 @@ run_and_extract_results = function(i, quota, management_time,
 cull_params = list(strategy="random", quota=200, overlap_threshold=0.4, age=12)
 birth_control_params = list(strategy="random", quota=10, overlap_threshold=0.7)
 worm_control_params = list(strategy="random", quota=10000, overlap_threshold=0.8)
+latrine_cleanup_params = list(strategy="human", overlap_threshold=0.001)
 
 # Worm control, this one might not be quota based.  However, for comparison
 # purposes it might make sense to implement this one as a quota as well...
@@ -93,14 +94,15 @@ single_sim = TRUE # IF TRUE JUST RUNS A SINGLE SIMULATION
 
 if(single_sim){ # Run a single simulation
 
-    management_time = 250
+    management_time = 100
     time_steps = 200
     params = get_simulation_parameters(TIME_STEPS=time_steps)
     init_arrays = get_init_arrays(params) # Load in init arrays
     all_res = full_simulation(params, init_arrays, 
-                              cull_params=cull_params, 
+                              cull_params=NULL, 
                               birth_control_params=NULL,
-                              worm_control_params=NULL, 
+                              worm_control_params=NULL,
+                              latrine_cleanup_params=latrine_cleanup_params, 
                               management_time=management_time,
                               print_it=TRUE)
 

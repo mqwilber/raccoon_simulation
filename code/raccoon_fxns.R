@@ -359,9 +359,8 @@ pick_up_eggs = function(emean, ek, infect, resist, eggs_environ, load,
 
 }
 
-pick_up_rodents = function(mouse_worm_mean, 
-                        rodent_encounter_prob, larval_worm_infectivity,
-                        eggs_environ, egg_contact_param){
+pick_up_rodents = function(mouse_worm_mean,  mouse_worm_k,
+                        rodent_encounter_prob, larval_worm_infectivity){
     # Function to pick up rodents from rodent pool.  Rodent 
     # encounters worm, picks up worms from a negative binomial, and 
     # then worms establish with some prob
@@ -370,17 +369,15 @@ pick_up_rodents = function(mouse_worm_mean,
     # ----------
     # mouse_worm_mean, larval_worm_infectivity
     #       egg_contact_param, rodent_encounter_prob : see `get_simulation_parameters`
-    # eggs_environ: float, zone-dependent eggs in environment
+    # mouse_worm_k : Aggregation of worms in mice.
     #
     # Returns
     # -------
     # : number of larval worms acquired
 
     # Update rodent mean and variance
-    mouse_mean_and_k = update_rodent_mean_var(eggs_environ, egg_contact_param, 
-                                mouse_worm_mean)
 
-    larval_worms = rnbinom(1, mu=mouse_mean_and_k$mean, size=mouse_mean_and_k$k) # Larval worms per mouse
+    larval_worms = rnbinom(1, mu=mouse_worm_mean, size=mouse_worm_k) # Larval worms per mouse
 
 
     new_worms = rbinom(1, 1, rodent_encounter_prob) * # Encounter with mice
@@ -404,18 +401,31 @@ update_rodent_mean_var = function(eggs_environ, egg_contact_param,
     # Return
     # ------
     # : list, updated mean and k based on environmental egg load in a zone
+    #
+    # Note: If new_mean is 0, the variance is undefined, but rnbinom will handle
+    # this correctly and return 0 if mean = 0.
 
     eprob = get_eprob(eggs_environ, egg_contact_param)
 
     new_mean = eprob * mouse_worm_mean
 
-    # From Shaw and Dobson 1995 TPL
-    logvar = 1.551*log10(new_mean) + 1.098
-
     # Convert to NBD k
-    new_k = (new_mean)^2 / (10^logvar - new_mean)
+    new_k = update_rodent_k(new_mean)
 
     return(list(mean=new_mean, k=new_k))
+
+}
+
+update_rodent_k = function(rodent_mean){
+    # Use Taylors Law to get new aggregation k given a mean.
+
+    # From Shaw and Dobson 1995 TPL
+    logvar = 1.551*log10(rodent_mean) + 1.098
+
+    # Convert to NBD k
+    new_k = (rodent_mean)^2 / (10^logvar - rodent_mean)
+
+    return(new_k)
 
 }
 
@@ -678,9 +688,7 @@ get_human_risk_metric = function(eggproduction_array, egg_decay){
     #
     # Parameters
     # -----------
-    # human_overlap_through_time: list containing the vectors that have human
-    #                           risks for each raccoon
-    # raccoon_worm_array: Raccoon worm array
+    # eggproduction_array: array of zone based past egg production
     # egg_decay: parameter determining egg decay rate in the environment
 
     # Number of raccoons at end of simulation
@@ -824,6 +832,18 @@ worm_traj = function(raccoon_worm_array){
                     theme(legend.position="none")
     return(tplot)
 }
+
+worm_traj_total = function(raccoon_worm_array){
+    # Plot trajectories of individual raccoons
+
+    all_worms = rowSums(raccoon_worm_array, na.rm=TRUE)
+    sdata = data.frame(time=1:length(all_worms), worms=all_worms)
+    tplot = ggplot(sdata, aes(x=time, y=worms)) + 
+                    geom_line() + geom_point()
+    return(tplot)
+}
+
+
 
 
 ## Get parameters and arrays ##
@@ -971,7 +991,11 @@ get_init_arrays = function(prms){
     human_overlap_through_time = list()
     human_overlap_through_time[[1]] = human_vect
     eggproduction_array = array(NA, dim=c(prms$TIME_STEPS + 1, prms$ZONES))
+    humanrisk_array = array(NA, dim=prms$TIME_STEPS + 1)
 
+    # Rodent mean array
+    rodent_mean_array = array(NA, dim=c(prms$TIME_STEPS + 1, prms$ZONES))
+    rodent_mean_array[1, ] = prms$MOUSE_WORM_MEAN
 
     new_babies_vect = array(NA, dim=prms$TIME_STEPS + 1)
     new_babies_vect[1] = 0
@@ -999,6 +1023,10 @@ get_init_arrays = function(prms){
     eggproduction_array[1, ] = assign_egg_production(raccoon_worm_array[1, ], 
                                         human_vect, prms$ZONES)
 
+    humanrisk_array[1] = get_human_risk_metric(
+                        matrix(eggproduction_array[1, ], nrow=1, ncol=prms$ZONES), 
+                        prms$EGG_DECAY)
+
     init_arrays = list(raccoon_dead_alive_array=raccoon_dead_alive_array,
                        initial_age_vector=initial_age_vector,
                        age_array=age_array,
@@ -1008,7 +1036,9 @@ get_init_arrays = function(prms){
                        infra_worm_array=infra_worm_array,
                        raccoon_worm_array=raccoon_worm_array,
                        eggproduction_array=eggproduction_array,
-                       repro_able_vect=repro_able_vect)
+                       humanrisk_array=humanrisk_array,
+                       repro_able_vect=repro_able_vect,
+                       rodent_mean_array=rodent_mean_array)
 
     return(init_arrays)
 }
@@ -1016,6 +1046,7 @@ get_init_arrays = function(prms){
 
 full_simulation = function(prms, init_arrays, cull_params=NULL, 
                            birth_control_params=NULL, worm_control_params=NULL,
+                           latrine_cleanup_params=NULL,
                            management_time=50,  print_it=FALSE){
     # Runs the full individual based simulation
     #
@@ -1050,9 +1081,6 @@ full_simulation = function(prms, init_arrays, cull_params=NULL,
         new_babies = 0
         babies_at_this_time_vect = array(NA, dim=dim(raccoon_worm_array)[2])
 
-        # Calculate eggs remaining in each zone for this time step
-        eggs_remaining = get_cumulative_egg_load(time - 1, eggproduction_array, 
-                                            prms$EGG_DECAY)
 
         # Total raccoons in a give zone at the previous time step
         tot_racs_by_zone = get_zone_density(human_overlap_through_time[[time - 1]], 
@@ -1078,11 +1106,29 @@ full_simulation = function(prms, init_arrays, cull_params=NULL,
             worm_control_indices = get_bait_indices(worm_control_params,
                                                     raccoon_dead_alive_array[time - 1, ],
                                                     human_overlap_through_time[[time - 1]])
+
+            # Latrine clean up
+            if(!is.null(latrine_cleanup_params)){
+
+                lower = ceiling(latrine_cleanup_params$overlap_threshold * prms$ZONES)
+
+                eggproduction_array[1:(time - 1), lower:prms$ZONES] = 0 #eggproduction_array[1:(time - 1), lower:prms$ZONES]
+            }
+
+
         } else{
             birth_control_indices = integer(0) 
             cull_indices = integer(0)
             worm_control_indices = integer(0) 
         }
+
+        # Calculate eggs remaining in each zone for this time step
+        eggs_remaining = get_cumulative_egg_load(time - 1, eggproduction_array, 
+                                            prms$EGG_DECAY)
+
+        # Getting the rodent mean
+        rodent_mean_array[time, ] = unlist(sapply(eggs_remaining, update_rodent_mean_var, 
+                                    prms$EGG_CONTACT, prms$MOUSE_WORM_MEAN)[1, ])
 
         # Loop through raccoons but only through raccoons that are alive
         alive_inds = which(raccoon_dead_alive_array[time - 1, ] == 1)
@@ -1144,14 +1190,6 @@ full_simulation = function(prms, init_arrays, cull_params=NULL,
 
                 # 3. Pick up eggs or pick up rodents depending on age
 
-                # if(any(rac == worm_control_indices)){
-
-                # infra_worm_array[[rac]][time, time] = 0
-                # raccoon_worm_array[time, rac] = sum(infra_worm_array[[rac]][time, ], na.rm=T)
-
-
-                # } else{
-
                 if(age_now <= prms$AGE_EGG_RESISTANCE){ # Only pick up worms from eggs
 
                     worms_acquired = pick_up_eggs(prms$ENCOUNTER_MEAN,
@@ -1163,11 +1201,11 @@ full_simulation = function(prms, init_arrays, cull_params=NULL,
 
 
                 } else{ # Only pick up worms from rodent
-                    worms_acquired = pick_up_rodents(prms$MOUSE_WORM_MEAN,
+
+                    worms_acquired = pick_up_rodents(rodent_mean_array[time - 1, zone_now],
+                                                     update_rodent_k(rodent_mean_array[time - 1, zone_now]),
                                                      prms$RODENT_ENCOUNTER_PROB,
-                                                     prms$LARVAL_WORM_INFECTIVITY,
-                                                     eggs_remaining[zone_now],
-                                                     prms$EGG_CONTACT)
+                                                     prms$LARVAL_WORM_INFECTIVITY)
 
                 }
 
@@ -1176,7 +1214,7 @@ full_simulation = function(prms, init_arrays, cull_params=NULL,
 
                 # }
 
-                # 4. Disperse if raccoon is 6
+                # 4. Disperse if raccoon is 12
                 # TODO: Zone density-based on t or t - 1
                 if(age_now == prms$DISPERSAL_AGE){
                     human_vect[rac] = assign_zone_dispersal(prms$K_CAPACITY, 
@@ -1215,12 +1253,14 @@ full_simulation = function(prms, init_arrays, cull_params=NULL,
 
         }
 
-        # Save the new human risk array
+        # Save the new human overlap and human risk arrays
         human_overlap_through_time[[time]] = human_vect
         eggproduction_array[time, ] = assign_egg_production(
                                             raccoon_worm_array[time, ],
                                             human_vect,
                                             prms$ZONES)
+        humanrisk_array[time] = get_human_risk_metric(eggproduction_array[1:time, ], 
+                                                             prms$EGG_DECAY)[time]
 
     }
 
@@ -1233,5 +1273,7 @@ full_simulation = function(prms, init_arrays, cull_params=NULL,
                 human_vect=human_vect,
                 repro_able_vect=repro_able_vect,
                 human_overlap_through_time=human_overlap_through_time,
-                eggproduction_array=eggproduction_array))
+                eggproduction_array=eggproduction_array,
+                humanrisk_array=humanrisk_array,
+                rodent_mean_array=rodent_mean_array))
 } # End full simulation
