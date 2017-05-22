@@ -176,8 +176,6 @@ get_trap_indices = function(management_params, raccoon_dead_alive_vect,
         # Traps only catch a random number of raccoons.
         total_caught = rbinom(1, management_params$quota, trap_prob)
 
-        print(c(length(pop_inds), rac_density, trap_prob, total_caught))
-
         # Cull either quota or how ever many individuals are there < quota. 
         trap_inds = sample(pop_inds, min(c(length(pop_inds), total_caught)))
 
@@ -185,7 +183,6 @@ get_trap_indices = function(management_params, raccoon_dead_alive_vect,
         if(management_params$strategy == "age"){
 
             trap_inds = trap_inds[age_vect[trap_inds] < management_params$age]
-            print(paste("Trapped", length(trap_inds), "raccoons"))
         }
 
     } else{
@@ -202,20 +199,18 @@ get_bait_indices = function(worm_control_params, raccoon_dead_alive_vect,
     # 
     # Possible strategies are:
     # 1. `random`: Bait everybody equally
-    #   - Additional parameters: `quota`: Number of raccoons to kill per time step
+    #   - Additional parameters: `quota`: Number of raccoons to bait per time step
     # 2. `human`: Only bait individuals with a human overlap greater than 
     #              `overlap_threshold`
-    #   - Additional parameters: `quota`: absolute number of raccoons to kill
+    #   - Additional parameters: `quota`: absolute number of bait to distribute
     #                            `overlap_threshold`: Between 0 and 1,
-    #                             threshold above which you are culled
+    #                             Where the bait is distributed.
     #
     # Parameters
     # ----------
     # worm_control_params : list or NULL
     # raccoon_dead_alive_vect: vector, vector specifying whether raccoons 
     #      are dead or alive at time t - 1 
-    # age_vect : vector, specifying the ages of alive raccoons at year time
-    #                   t - 1
     # human_overlap_through_time_vect: vector, specifies the human overlap value
     #                   of alive raccoons at time t - 1.
     # Returns
@@ -247,8 +242,9 @@ get_bait_indices = function(worm_control_params, raccoon_dead_alive_vect,
     # Check if there are any raccoons to bait
     if(length(pop_inds) > 1){
 
-        # 0.9 is default probability of initial bait not disappearing
-        bait_remaining = rbinom(1, worm_control_params$quota, 0.9)
+        # 0.4 is default probability of initial bait not disappearing
+        # This 0.4 is based on Smyser 2015
+        bait_remaining = rbinom(1, worm_control_params$quota, 0.4)
         worm_control_inds = unique(sample(pop_inds, bait_remaining, replace=TRUE))
 
     } else {
@@ -377,8 +373,13 @@ pick_up_rodents = function(mouse_worm_mean,  mouse_worm_k,
 
     # Update rodent mean and variance
 
-    larval_worms = rnbinom(1, mu=mouse_worm_mean, size=mouse_worm_k) # Larval worms per mouse
-
+    if(mouse_worm_k <= 0 || is.na(mouse_worm_k)){
+        # When mean is small enough that the moment estimator for k is < 0, set
+        # larval worms to 0.
+        larval_worms = 0
+    } else{ 
+        larval_worms = rnbinom(1, mu=mouse_worm_mean, size=mouse_worm_k) # Larval worms per mouse
+    }
 
     new_worms = rbinom(1, 1, rodent_encounter_prob) * # Encounter with mice
                 rbinom(1, larval_worms, larval_worm_infectivity) # Worms establishing
@@ -810,6 +811,16 @@ age_prevalence_plot = function(raccoon_worm_array, age_array, range){
     ggplot(prevs, aes(x=age, y=prev_worms)) + geom_point() + geom_line()
 }
 
+plot_prev = function(raccoon_worm_array){
+    # Plot whole world prevalence through time
+
+    prev_time = rowSums(raccoon_worm_array > 0, na.rm=T) / 
+                            rowSums(raccoon_worm_array > -1, na.rm=T)
+    plot_dat = data.frame(time=1:length(prev_time), prev=prev_time)
+    prev_plot = ggplot(plot_dat, aes(x=time, y=prev)) + geom_line()
+    return(prev_plot)
+}
+
 age_intensity_plot = function(raccoon_worm_array, age_array, range){
     # Plot full age intensity profile
     # range specifies which time range to calculate the age-intensity for
@@ -822,7 +833,7 @@ age_intensity_plot = function(raccoon_worm_array, age_array, range){
 }
 
 
-worm_traj = function(raccoon_worm_array){
+plot_worm_traj = function(raccoon_worm_array){
     # Plot trajectories of individual raccoons
 
     sdata = stack(data.frame(raccoon_worm_array))
@@ -833,7 +844,7 @@ worm_traj = function(raccoon_worm_array){
     return(tplot)
 }
 
-worm_traj_total = function(raccoon_worm_array){
+plot_worm_traj_total = function(raccoon_worm_array){
     # Plot trajectories of individual raccoons
 
     all_worms = rowSums(raccoon_worm_array, na.rm=TRUE)
@@ -1110,9 +1121,11 @@ full_simulation = function(prms, init_arrays, cull_params=NULL,
             # Latrine clean up
             if(!is.null(latrine_cleanup_params)){
 
+                # Find minimum overlap zone to cleanup
                 lower = ceiling(latrine_cleanup_params$overlap_threshold * prms$ZONES)
 
-                eggproduction_array[1:(time - 1), lower:prms$ZONES] = 0 #eggproduction_array[1:(time - 1), lower:prms$ZONES]
+                eggproduction_array[1:(time - 1), lower:prms$ZONES] = 
+                    eggproduction_array[1:(time - 1), lower:prms$ZONES] * 0#* (1 - latrine_cleanup_params$cleanup_efficiency)
             }
 
 

@@ -3,13 +3,15 @@ library(ggplot2)
 library(data.table)
 
 # Get results folders
-folder_combos = list(human=c(Sys.glob("../results/birth_control_human/"),
-                        Sys.glob("../results/cull_human/")),
-                     random=c(Sys.glob("../results/birth_control_random/"),
-                        Sys.glob("../results/cull_random/")),
-                     worm=Sys.glob("../results/worm_control_*/"),
-                     age=c(Sys.glob("../results/cull_age/"), 
-                           Sys.glob("../results/cull_random/")))
+folder_combos = list(human=Sys.glob("../results/latrine_cleanup_human/"))
+
+# list(human=c(Sys.glob("../results/birth_control_human/"),
+#                         Sys.glob("../results/cull_human/")),
+#                      random=c(Sys.glob("../results/birth_control_random/"),
+#                         Sys.glob("../results/cull_random/")),
+#                      worm=Sys.glob("../results/worm_control_*/"),
+#                      age=c(Sys.glob("../results/cull_age/"), 
+#                            Sys.glob("../results/cull_random/")))
                 
                      
                  # Sys.glob("../results/cull_random/"),
@@ -42,8 +44,10 @@ for(combo in names(folder_combos)){
 
         if(length(grep("worm_control", fsplit)) == 1) {
             quotas = c(0, log10(c(1, 10, 100, 1000, 10000, 100000)) + 1)
+        } else if((length(grep("latrine_cleanup", fsplit)) == 1)){
+            quotas = c(1)
         } else{
-            quotas = log10(c(0:10, 20, 50, 100, 200))
+            quotas = log10(c(0:10, 20, 50, 100, 200)) # CHANGE
         }
 
         for(mfile in mean_files){

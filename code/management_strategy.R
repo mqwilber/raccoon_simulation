@@ -14,7 +14,8 @@ set.seed(1)
 
 run_and_extract_results = function(i, quota, management_time, 
                                     cull_params, birth_control_params, 
-                                    worm_control_params, time_steps){
+                                    worm_control_params, latrine_cleanup_params, 
+                                    time_steps){
     # Runs simulations and extracts results
 
     print(paste("Simulation", i, "for quota", quota))
@@ -25,11 +26,12 @@ run_and_extract_results = function(i, quota, management_time,
     all_res = full_simulation(params, init_arrays,
                                 cull_params=cull_params, 
                                 birth_control_params=birth_control_params, 
-                                worm_control_params=worm_control_params, 
+                                worm_control_params=worm_control_params,
+                                latrine_cleanup_params=latrine_cleanup_params, 
                                 management_time=management_time)
 
     # Extract min, max rac pop sizes
-    decrement = 24 # Use the first two years of the simulation
+    decrement = 24 # Use the last two years of the simulation
     pop_traj = rowSums(all_res$raccoon_dead_alive_array, na.rm=T)
     tot_steps = length(pop_traj)
     max_rac_pop = max(pop_traj[(tot_steps - decrement):tot_steps])
@@ -60,7 +62,6 @@ run_and_extract_results = function(i, quota, management_time,
     min_intensity = min(intensity_traj[(tot_steps - decrement):tot_steps])
     mean_intensity = mean(intensity_traj[(tot_steps - decrement):tot_steps])
 
-
     return(c(min_rac_pop, mean_rac_pop, max_rac_pop, 
              min_worm_pop, mean_worm_pop, max_worm_pop,
              min_human_risk, mean_human_risk, max_human_risk,
@@ -73,23 +74,20 @@ run_and_extract_results = function(i, quota, management_time,
 ## RUNNING SIMULATION ###
 
 # Simulation parameters
-cull_params = list(strategy="random", quota=200, overlap_threshold=0.4, age=12)
+cull_params = list(strategy="random", quota=500, overlap_threshold=0.4, age=12)
 birth_control_params = list(strategy="random", quota=10, overlap_threshold=0.7)
 worm_control_params = list(strategy="random", quota=10000, overlap_threshold=0.8)
-latrine_cleanup_params = list(strategy="human", overlap_threshold=0.001)
+latrine_cleanup_params = list(strategy="human", overlap_threshold=0, cleanup_efficiency=1)
 
-# Worm control, this one might not be quota based.  However, for comparison
-# purposes it might make sense to implement this one as a quota as well...
-
-SIMS = 50
+SIMS = 30
 management_time = 100
-time_steps = 400
+time_steps = 200
 col_names = c("min_rac_pop", "mean_rac_pop", "max_rac_pop", 
              "min_worm_pop", "mean_worm_pop", "max_worm_pop",
              "min_human_risk", "mean_human_risk", "max_human_risk",
 	         "min_prev", "mean_prev", "max_prev",
 	         "min_intensity", "mean_intensity", "max_intensity")
-single_sim = TRUE # IF TRUE JUST RUNS A SINGLE SIMULATION 
+single_sim = FALSE # IF TRUE JUST RUNS A SINGLE SIMULATION 
 
 
 if(single_sim){ # Run a single simulation
@@ -99,10 +97,10 @@ if(single_sim){ # Run a single simulation
     params = get_simulation_parameters(TIME_STEPS=time_steps)
     init_arrays = get_init_arrays(params) # Load in init arrays
     all_res = full_simulation(params, init_arrays, 
-                              cull_params=NULL, 
+                              cull_params=cull_params, 
                               birth_control_params=NULL,
                               worm_control_params=NULL,
-                              latrine_cleanup_params=latrine_cleanup_params, 
+                              latrine_cleanup_params=NULL, 
                               management_time=management_time,
                               print_it=TRUE)
 
@@ -115,30 +113,38 @@ if(single_sim){ # Run a single simulation
                                          "age"=c(3, 12, 25), 
                                          "random"=c(1)),
                                birth_control_params=NULL,
-                               worm_control_params=NULL),
+                               worm_control_params=NULL,
+                               latrine_cleanup_params=NULL),
 
                      birth_control_only=list(
                                 cull_params=NULL,
                                 birth_control_params=
                                      list("human"=c(0.1, 0.5, 0.9),
                                           "random"=c(1)), 
-                                worm_control_params=NULL),
+                                worm_control_params=NULL,
+                                latrine_cleanup_params=NULL),
 
                      worm_control_only=list(
                                 cull_params=NULL,
                                 birth_control_params=NULL,
                                 worm_control_params=
                                      list("human"=c(0.1, 0.5, 0.9),
-                                          "random"=c(1))))
+                                          "random"=c(1)),
+                                latrine_cleanup_params=NULL),
 
-                # list(
+                    latrine_cleanup_only=list(
+                                cull_params=NULL,
+                                birth_control_params=NULL,
+                                worm_control_params=NULL,
+                                latrine_cleanup_params=
+                                    list("human"=seq(0, 1, by=0.1))))
 
-                #      worm_control_only=list(
+                # list(latrine_cleanup_only=list(
                 #                 cull_params=NULL,
                 #                 birth_control_params=NULL,
-                #                 worm_control_params=
-                #                      list("human"=seq(0.1, 0.9, length=9),
-                #                           "random"=c(1)))) 
+                #                 worm_control_params=NULL,
+                #                 latrine_cleanup_params=
+                #                     list("human"=seq(0, 1, by=0.1)))
 
 
     for(scenario_nm in names(management_scenarios)) {
@@ -159,8 +165,10 @@ if(single_sim){ # Run a single simulation
         # Set quotas for the correct scenario
         if(scenario_nm == "worm_control_only"){
             quotas = c(0, 1, 10, 100, 1000, 10000, 100000)
+        } else if(scenario_nm == "latrine_cleanup_only"){
+            quotas = c(1) # There are no quotes in the latrine control
         } else{
-            quotas = c(0:10, 20, 50, 100, 200)
+           quotas = c(0, 10, 20, 50, 100, 500, 1000, 5000) 
         }
 
         # Loop through different management strategies within a current action
@@ -169,8 +177,6 @@ if(single_sim){ # Run a single simulation
             print(paste("Beginning", strategy, "for", current_action))
 
             controls = scenario[[current_action]][[strategy]]
-
-
 
             for(control in controls){ # Loops controls on the strategy
 
@@ -190,7 +196,8 @@ if(single_sim){ # Run a single simulation
                     sim_vals = mclapply(1:SIMS, run_and_extract_results, 
                                                         quotas[j], management_time, 
                                                         cull_params, birth_control_params,
-                                                        worm_control_params, time_steps, 
+                                                        worm_control_params, latrine_cleanup_params, 
+                                                        time_steps, 
                                                         mc.cores=4)
 
                     cull_matrix = do.call(rbind, sim_vals)
@@ -205,7 +212,7 @@ if(single_sim){ # Run a single simulation
                 }
 
                 save_prefix = strsplit(current_action, "params")[[1]]
-                folder = "" #"../results/"
+                folder = "../results/"
                 saveRDS(sim_mean_results, 
                             paste(folder, save_prefix, strategy, "/sim_mean_results_", 
                                    strategy, control, ".rds", sep=""))
