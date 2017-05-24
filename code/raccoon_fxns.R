@@ -1124,8 +1124,8 @@ full_simulation = function(prms, init_arrays, cull_params=NULL,
                 # Find minimum overlap zone to cleanup
                 lower = ceiling(latrine_cleanup_params$overlap_threshold * prms$ZONES)
 
-                eggproduction_array[1:(time - 1), lower:prms$ZONES] = 
-                    eggproduction_array[1:(time - 1), lower:prms$ZONES] * 0#* (1 - latrine_cleanup_params$cleanup_efficiency)
+                    eggproduction_array[1:(time - 1), lower:prms$ZONES] = 
+                        eggproduction_array[1:(time - 1), lower:prms$ZONES] * 0#* (1 - latrine_cleanup_params$cleanup_efficiency)
             }
 
 

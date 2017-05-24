@@ -6,8 +6,8 @@ source("raccoon_fxns.R") # Load in the helper functions
 set.seed(1)
 
 # Set the possible management strategies
-cull_params = list(strategy="random", quota=10, overlap_threshold=0.4)
-birth_control_params = list(strategy="random", quota=8, overlap_threshold=0.7)
+cull_params = list(strategy="random", quota=250, overlap_threshold=0.4)
+birth_control_params = list(strategy="random", quota=250, overlap_threshold=0.7)
 worm_control_params = list(strategy="random", quota=10000, overlap_threshold=0.8)
 
 strats = list(cull=list(cull_params=cull_params, birth_control_params=NULL, worm_control_params=NULL),

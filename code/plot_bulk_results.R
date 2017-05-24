@@ -3,15 +3,17 @@ library(ggplot2)
 library(data.table)
 
 # Get results folders
-folder_combos = list(human=Sys.glob("../results/latrine_cleanup_human/"))
+folder_combos =
+    list(human=c(Sys.glob("../results/birth_control_human/"),
+                        Sys.glob("../results/cull_human/")),
+                     random=c(Sys.glob("../results/birth_control_random/"),
+                        Sys.glob("../results/cull_random/")),
+                     worm=Sys.glob("../results/worm_control_*/"),
+                     age=c(Sys.glob("../results/cull_age/"), 
+                           Sys.glob("../results/cull_random/")), 
+                     latrine=c(Sys.glob("../results/latrine_cleanup*/")))
 
-# list(human=c(Sys.glob("../results/birth_control_human/"),
-#                         Sys.glob("../results/cull_human/")),
-#                      random=c(Sys.glob("../results/birth_control_random/"),
-#                         Sys.glob("../results/cull_random/")),
-#                      worm=Sys.glob("../results/worm_control_*/"),
-#                      age=c(Sys.glob("../results/cull_age/"), 
-#                            Sys.glob("../results/cull_random/")))
+                     # latrine=c(Sys.glob("../results/latrine_cleanup*/")))
                 
                      
                  # Sys.glob("../results/cull_random/"),
@@ -47,7 +49,7 @@ for(combo in names(folder_combos)){
         } else if((length(grep("latrine_cleanup", fsplit)) == 1)){
             quotas = c(1)
         } else{
-            quotas = log10(c(0:10, 20, 50, 100, 200)) # CHANGE
+            quotas = c(0, log10(c(10, 20, 50, 100, 500, 1000, 5000)) + 1) # CHANGE
         }
 
         for(mfile in mean_files){
@@ -82,11 +84,22 @@ for(combo in names(folder_combos)){
         tmeltvar_df = melt(sapply(var_arrays, function(x) x[, varname]))
 
         # Rename and adjust variables for easy ggplotting later
-        colnames(tmelt_df) = c("quota", "strategy", "mean_value")
-        tmelt_df$sd_value = tmeltvar_df$value
-        tmelt_df$quota = tmelt_df$quota
-        tmelt_df$metric = varname
-        plotting_df[[varname]] = tmelt_df
+
+        if(combo != "latrine"){
+
+            colnames(tmelt_df) = c("quota", "strategy", "mean_value")
+            tmelt_df$sd_value = tmeltvar_df$value
+            tmelt_df$quota = tmelt_df$quota
+            tmelt_df$metric = varname
+            plotting_df[[varname]] = tmelt_df
+        } else{
+
+            tmelt_df$sd_value = tmeltvar_df$value
+            tmelt_df$metric = varname
+            tmelt_df$strategy = rownames(tmelt_df)
+            plotting_df[[varname]] = tmelt_df
+
+        }
 
     }
 
@@ -102,27 +115,42 @@ for(combo in names(folder_combos)){
     plotting_df$generic_type = generic_type
 
 
-    #plotting_df = plotting_df[plotting_df$metric != "mean_worm_pop", ]
-    gp = ggplot(plotting_df, aes(x=quota, y=log10(mean_value + 1), linetype=generic_type, color=specific_type)) + 
-                        geom_line() +
-                        # geom_ribbon(aes(ymin=log10(mean_value + 1 - sd_value), 
-                        #                 ymax=log10(mean_value  + 1 + sd_value),
-                        #                 color=strategy), linetype=0, alpha=0.3) +
-                        facet_wrap(~metric) + theme_bw() + xlab("log(quota)") + ylim(0,3.5) +
-                        ylab("log(population) or log(metric)")
-                        #scale_x_continuous(breaks=quota_vals)
+
+    if(combo != "latrine"){
+
+        #plotting_df = plotting_df[plotting_df$metric != "mean_worm_pop", ]
+        gp2 = ggplot(plotting_df, aes(x=quota, y=log10(mean_value + 1), linetype=generic_type, color=specific_type)) + 
+                            geom_line() +
+                            # geom_ribbon(aes(ymin=log10(mean_value + 1 - sd_value), 
+                            #                 ymax=log10(mean_value  + 1 + sd_value),
+                            #                 color=strategy), linetype=0, alpha=0.3) +
+                            facet_wrap(~metric) + theme_bw() + xlab("log(quota)") + ylim(0,3.5) +
+                            ylab("log(population) or log(metric)")
+                            #scale_x_continuous(breaks=quota_vals)
 
 
-    gp2 = ggplot(plotting_df, aes(x=quota, y=mean_value, linetype=generic_type, color=specific_type)) + 
-                        geom_line() +
-                        # geom_ribbon(aes(ymin=mean_value - sd_value, 
-                        #                 ymax=mean_value + sd_value,
-                        #                 color=strategy), alpha=0.3) +
-                        facet_wrap(~metric, scales="free") + theme_bw() + xlab("log(quota)") + 
-                        ylab("Population or metric") #+ ylim(c(0, 550))# +
+        gp = ggplot(plotting_df, aes(x=quota, y=mean_value, linetype=generic_type, color=specific_type)) + 
+                            geom_line() + geom_point() +
+                            # geom_ribbon(aes(ymin=mean_value - sd_value, 
+                            #                 ymax=mean_value + sd_value,
+                            #                 color=strategy), alpha=0.3) +
+                            facet_wrap(~metric, scales="free") + theme_bw() + xlab("log(quota)") + 
+                            ylab("Population or metric") #+ ylim(c(0, 550))# +
 
-                        #scale_x_continuous(breaks=quota_vals)
+                            #scale_x_continuous(breaks=quota_vals)
 
-    ggsave(paste("../results/plots/bulk_results_", combo, ".jpg", sep=""), plot=gp, width=8, height=6)
+
+    } else{
+
+        ind = plotting_df$specific_type == "human0.rds"
+        plotting_df$specific_type[ind] = "human0.0.rds"
+        gp = ggplot(plotting_df, aes(x=specific_type, y=value)) + 
+                    geom_point() + geom_errorbar(aes(ymin=value - sd_value, ymax=value + sd_value)) +
+                    facet_wrap(~metric, scales="free") +
+                    theme_bw() + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+    }
+    
+    ggsave(paste("../results/plots/bulk_results_", combo, ".pdf", sep=""), plot=gp, width=8, height=6)
 
 }

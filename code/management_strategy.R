@@ -77,7 +77,7 @@ run_and_extract_results = function(i, quota, management_time,
 cull_params = list(strategy="random", quota=500, overlap_threshold=0.4, age=12)
 birth_control_params = list(strategy="random", quota=10, overlap_threshold=0.7)
 worm_control_params = list(strategy="random", quota=10000, overlap_threshold=0.8)
-latrine_cleanup_params = list(strategy="human", overlap_threshold=0, cleanup_efficiency=1)
+latrine_cleanup_params = list(strategy="human", overlap_threshold=1, cleanup_efficiency=1)
 
 SIMS = 30
 management_time = 100
@@ -87,20 +87,20 @@ col_names = c("min_rac_pop", "mean_rac_pop", "max_rac_pop",
              "min_human_risk", "mean_human_risk", "max_human_risk",
 	         "min_prev", "mean_prev", "max_prev",
 	         "min_intensity", "mean_intensity", "max_intensity")
-single_sim = FALSE # IF TRUE JUST RUNS A SINGLE SIMULATION 
+single_sim = TRUE # IF TRUE JUST RUNS A SINGLE SIMULATION 
 
 
 if(single_sim){ # Run a single simulation
 
     management_time = 100
-    time_steps = 200
+    time_steps = 300
     params = get_simulation_parameters(TIME_STEPS=time_steps)
     init_arrays = get_init_arrays(params) # Load in init arrays
     all_res = full_simulation(params, init_arrays, 
-                              cull_params=cull_params, 
+                              cull_params=NULL, 
                               birth_control_params=NULL,
                               worm_control_params=NULL,
-                              latrine_cleanup_params=NULL, 
+                              latrine_cleanup_params=latrine_cleanup_params, 
                               management_time=management_time,
                               print_it=TRUE)
 
