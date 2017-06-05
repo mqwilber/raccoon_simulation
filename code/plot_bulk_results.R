@@ -26,6 +26,7 @@ col_names = c("min_rac_pop", "mean_rac_pop", "max_rac_pop",
              "min_prev", "mean_prev", "max_prev",
              "min_intensity", "mean_intensity", "max_intensity")
 
+high_effort = list()
 
 
 #c(Sys.glob("../results/birth_control_human/"), 
@@ -114,7 +115,11 @@ for(combo in names(folder_combos)){
     plotting_df$specific_type = specific_type
     plotting_df$generic_type = generic_type
 
-
+    # Extract "High Effort values"
+    if(any(plotting_df$specific_type == "human0.9.rds")){
+        high_effort[[combo]] = plotting_df[plotting_df$specific_type == "human0.9.rds", ]
+        
+    }
 
     if(combo != "latrine"){
 

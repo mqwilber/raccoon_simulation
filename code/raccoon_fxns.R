@@ -1290,3 +1290,73 @@ full_simulation = function(prms, init_arrays, cull_params=NULL,
                 humanrisk_array=humanrisk_array,
                 rodent_mean_array=rodent_mean_array))
 } # End full simulation
+
+
+run_and_extract_results = function(i, quota, management_time, 
+                                    cull_params, birth_control_params, 
+                                    worm_control_params, latrine_cleanup_params, 
+                                    time_steps){
+    # Runs simulations and extracts results for a given quota. 
+    # Extracts results from last 12 months of the simulation.
+    #
+    # Parameters
+    # ----------
+    # i : integer, simulation index 
+    # quota : double. Use NULL unless quota means something in the simulation. 
+    #           value does not influence analysis
+    # management_time : int, the simulation time at which the management starts
+    # cull_params , birth_control_params, worm_control_params, latrine_cleanup_params : 
+    #               Management parameters.
+    # time_steps : int, number of time steps in the simulation
+
+    print(paste("Simulation", i, "for quota", quota))
+
+    params = get_simulation_parameters(TIME_STEPS=time_steps) # Load in simulation parameters
+    init_arrays = get_init_arrays(params) # Load in init arrays
+
+    all_res = full_simulation(params, init_arrays,
+                                cull_params=cull_params, 
+                                birth_control_params=birth_control_params, 
+                                worm_control_params=worm_control_params,
+                                latrine_cleanup_params=latrine_cleanup_params, 
+                                management_time=management_time)
+
+    # Extract min, max rac pop sizes
+    decrement = 24 # Use the last two years of the simulation
+    pop_traj = rowSums(all_res$raccoon_dead_alive_array, na.rm=T)
+    tot_steps = length(pop_traj)
+    max_rac_pop = max(pop_traj[(tot_steps - decrement):tot_steps])
+    min_rac_pop = min(pop_traj[(tot_steps - decrement):tot_steps])
+    mean_rac_pop = mean(pop_traj[(tot_steps - decrement):tot_steps])
+
+    # Extract min, max, worm pop sizes
+    worm_pop_traj = rowSums(all_res$raccoon_worm_array, na.rm=T)
+    max_worm_pop = max(worm_pop_traj[(tot_steps - decrement):tot_steps])
+    min_worm_pop = min(worm_pop_traj[(tot_steps - decrement):tot_steps])
+    mean_worm_pop = mean(worm_pop_traj[(tot_steps - decrement):tot_steps])
+
+    # Human risk
+    human_risk = all_res$humanrisk_array 
+    max_human_risk = max(human_risk[(tot_steps - decrement):tot_steps])
+    min_human_risk = min(human_risk[(tot_steps - decrement):tot_steps])
+    mean_human_risk = mean(human_risk[(tot_steps - decrement):tot_steps])
+
+    # Prevalence measures
+    prev_traj = get_prevalence(all_res$raccoon_worm_array)
+    max_prev = max(prev_traj[(tot_steps - decrement):tot_steps])
+    min_prev = min(prev_traj[(tot_steps - decrement):tot_steps])
+    mean_prev = mean(prev_traj[(tot_steps - decrement):tot_steps])
+
+    # Mean intensity measures
+    intensity_traj = get_mean_intensity(all_res$raccoon_worm_array)
+    max_intensity = max(intensity_traj[(tot_steps - decrement):tot_steps])
+    min_intensity = min(intensity_traj[(tot_steps - decrement):tot_steps])
+    mean_intensity = mean(intensity_traj[(tot_steps - decrement):tot_steps])
+
+    return(c(min_rac_pop, mean_rac_pop, max_rac_pop, 
+             min_worm_pop, mean_worm_pop, max_worm_pop,
+             min_human_risk, mean_human_risk, max_human_risk,
+             min_prev, mean_prev, max_prev,
+             min_intensity, mean_intensity, max_intensity))
+
+}
