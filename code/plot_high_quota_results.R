@@ -2,6 +2,7 @@
 library(ggplot2)
 library(data.table)
 library(plyr)
+library(RColorBrewer)
 
 
 # Get results folders
@@ -125,8 +126,58 @@ for(nm in names(all_data)){
 }
 
 full_df = do.call(rbind, all_data)
-
 full_dt  = as.data.table(full_df)
+
+################# Tile plots ######################
+
+tile_dt = full_dt[(specific_type == "human0.1.rds" | specific_type == "human0.5.rds" | specific_type == "human0.9.rds"), ]
+tile_dt$mean_value[is.na(tile_dt$mean_value)] = 0
+
+# Merge dataframe to ca
+base_line_tile = full_dt[quota == 0 & generic_type == "cull human" & specific_type == "human0.1.rds", list(mean_value, metric)]
+colnames(base_line_tile) = c('mean_value_baseline', 'metric')
+
+setkey(tile_dt, metric)
+setkey(base_line_tile, metric)
+
+tile_dt2 = merge(tile_dt, base_line_tile, all.x=T)
+tile_dt2$management_effect = tile_dt2$mean_value / tile_dt2$mean_value_baseline
+
+tile_dt2$specific_type = revalue(tile_dt2$specific_type, 
+                            c("human0.1.rds"="overlap > 0.1",
+                              "human0.5.rds"="overlap > 0.5",
+                              "human0.9.rds"="overlap > 0.9"))
+
+tile_dt2$generic_type = revalue(tile_dt2$generic_type,
+                               c("birth control human"="Birth control",
+                                 "cull human"="Cull",
+                                 "latrine cleanup human"="Latrine cleanup",
+                                 "worm control human"="Worm control"))
+
+tile_dt2$generic_type = ordered(tile_dt2$generic_type, c("Birth control", "Cull", "Worm control", "Latrine cleanup"))
+
+tile_dt2$metric = revalue(tile_dt2$metric,
+                        c("mean_human_risk" = "Human risk",
+                          "mean_intensity" = "Mean infection intensity",
+                          "mean_prev" = "Mean prevalence",
+                          "mean_rac_pop"="Raccoon population",
+                          "mean_worm_pop"="Worm population"))
+
+# Difference from baseline
+
+myPalette <- colorRampPalette(brewer.pal(9, "Reds"), space="Lab")
+
+tile_plot = ggplot(as.data.frame(tile_dt2), aes(x=as.factor(quota), y=specific_type, fill=management_effect)) +
+      geom_tile() + 
+      scale_fill_gradientn(colours = myPalette(8), name="Management effect") +
+      facet_grid(metric~generic_type, scales="free") + theme_bw() +
+      theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+      ylab("Human overlap") + xlab("Management effort")
+
+ggsave("../results/plots/tile_plot_of_management_results.pdf", width=12, height=8)
+
+################# Bar plots ######################
+
 base_line = full_dt[quota == 0 & generic_type == "cull human" & specific_type == "human0.1.rds", ]
 
 # Only include the relevant human overlaps
