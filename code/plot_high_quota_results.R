@@ -165,11 +165,11 @@ tile_dt2$metric = revalue(tile_dt2$metric,
 
 # Difference from baseline
 
-myPalette <- colorRampPalette(brewer.pal(9, "Reds"), space="Lab")
+myPalette <- colorRampPalette(rev(brewer.pal(9, "RdBu")), space="Lab")
 
 tile_plot = ggplot(as.data.frame(tile_dt2), aes(x=as.factor(quota), y=specific_type, fill=management_effect)) +
       geom_tile() + 
-      scale_fill_gradientn(colours = myPalette(8), name="Management effect") +
+      scale_fill_gradientn(colours = myPalette(8), name="Management effect", limits=c(0, 2)) +
       facet_grid(metric~generic_type, scales="free") + theme_bw() +
       theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
       ylab("Human overlap") + xlab("Management effort")

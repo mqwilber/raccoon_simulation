@@ -845,7 +845,7 @@ plot_worm_traj = function(raccoon_worm_array){
 }
 
 plot_worm_traj_total = function(raccoon_worm_array){
-    # Plot trajectories of individual raccoons
+    # Plot total worm trajectory
 
     all_worms = rowSums(raccoon_worm_array, na.rm=TRUE)
     sdata = data.frame(time=1:length(all_worms), worms=all_worms)

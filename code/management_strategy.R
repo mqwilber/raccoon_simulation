@@ -28,7 +28,7 @@ set.seed(1)
 
 # A vector that can contain 1 or more of the three analyses
 # "single sim", "one management", "two_management"
-simulation_types = c("one management", "two management") #"single sim" # Either single sim, one management bulk, or two management bulk 
+simulation_types = c("single sim")#c("one management", "two management") #"single sim" # Either single sim, one management bulk, or two management bulk 
 
 results_dir = "../test_dir"
 cores = 8
@@ -58,9 +58,9 @@ if(any(simulation_types == "single sim")) { # Run a single simulation
     init_arrays = get_init_arrays(params) # Load in init arrays
     all_res = full_simulation(params, init_arrays, 
                               cull_params=NULL, 
-                              birth_control_params=birth_control_params,
+                              birth_control_params=NULL,
                               worm_control_params=NULL,
-                              latrine_cleanup_params=latrine_cleanup_params, 
+                              latrine_cleanup_params=NULL, 
                               management_time=management_time,
                               print_it=TRUE)
 
