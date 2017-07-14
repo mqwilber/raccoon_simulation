@@ -330,7 +330,7 @@ give_birth = function(age_now, time, tot_racs, repro_able,
 
 
 pick_up_eggs = function(emean, ek, infect, resist, eggs_environ, load,
-                            egg_contact_param){
+                            egg_contact_param, age, age_immunity){
     # Function for juvenile raccoons to pick up eggs
     #
     # Parameters
@@ -344,8 +344,15 @@ pick_up_eggs = function(emean, ek, infect, resist, eggs_environ, load,
     # : int, number of new eggs/worms acquired
 
 
-    # Exponential decline of infectivity.
+    # Exponential decline of infectivity.with load and age
     infect_red = infect * exp(-resist * load)
+
+    if(age <= 4){
+        infect_red = infect_red
+    } else{
+        # Exponential decline in susceptability with age after age 4
+        infect_red = infect_red * exp(-age_immunity * (age - 4))
+    }
 
     # Encounter and get eggs on face and get infected with eggs
     eprob = get_eprob(eggs_environ, egg_contact_param)
@@ -879,7 +886,8 @@ get_simulation_parameters = function(...){
     BABY_DEATH = 1 - (.52^(1/7))^4 # From data at age 0 in fit_param.R
     RANDOM_DEATH_PROB = 0.01 # Lower bound to death prob
     OLD_DEATH = (1 / (20 * 12)^2) # Above 20 years old the raccoon dies
-    AGE_EGG_RESISTANCE = 4 # Age above which raccoons no longer pick up eggs
+    AGE_EGG_RESISTANCE = 4 # Age above which raccoons start to loose susceptibility to eggs
+    AGE_SUSCEPTIBILITY = 0.1 # How susceptability declines with age.
     RODENT_ENCOUNTER_PROB = 0.5 # Monthly probability of encountering a rodent
     INIT_WORMS = 10 # Initial number of non-rodent worms in raccoons
 
@@ -953,7 +961,8 @@ get_simulation_parameters = function(...){
                 WORM_SURV_TRESH=WORM_SURV_TRESH,
                 WORM_SURV_SLOPE=WORM_SURV_SLOPE,
                 TIME_STEPS=TIME_STEPS,
-                ZONES=ZONES)
+                ZONES=ZONES,
+                AGE_SUSCEPTIBILITY=AGE_SUSCEPTIBILITY)
 
     new_params = list(...)
 
@@ -1203,22 +1212,23 @@ full_simulation = function(prms, init_arrays, cull_params=NULL,
 
                 # 3. Pick up eggs or pick up rodents depending on age
 
-                if(age_now <= prms$AGE_EGG_RESISTANCE){ # Only pick up worms from eggs
-
-                    worms_acquired = pick_up_eggs(prms$ENCOUNTER_MEAN,
+                worms_acquired = pick_up_eggs(prms$ENCOUNTER_MEAN,
                                             prms$ENCOUNTER_K,
                                             prms$INFECTIVITY, prms$RESISTANCE,
                                             eggs_remaining[zone_now],
                                             raccoon_worm_array[time - 1, rac],
-                                            prms$EGG_CONTACT)
+                                            prms$EGG_CONTACT, age_now, 
+                                            prms$AGE_SUSCEPTIBILITY)
 
 
-                } else{ # Only pick up worms from rodent
+                if(age_now > prms$AGE_EGG_RESISTANCE){ # Can pick up worms from rodent
 
-                    worms_acquired = pick_up_rodents(rodent_mean_array[time - 1, zone_now],
+                    worms_acquired_from_rodent = pick_up_rodents(rodent_mean_array[time - 1, zone_now],
                                                      update_rodent_k(rodent_mean_array[time - 1, zone_now]),
                                                      prms$RODENT_ENCOUNTER_PROB,
                                                      prms$LARVAL_WORM_INFECTIVITY)
+
+                    worms_acquired = worms_acquired + worms_acquired_from_rodent
 
                 }
 

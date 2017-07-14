@@ -4,6 +4,7 @@
 library(parallel)
 library(ggplot2)
 source("raccoon_fxns.R")
+datasource = "../data/raccoon_age_intensity.csv"
 
 
 compare_to_data = function(all_res, time_steps, lag=24){
@@ -31,7 +32,7 @@ compare_to_data = function(all_res, time_steps, lag=24){
     age_dat = data.frame(age=ages, worm=worms)
     age_dat = age_dat[complete.cases(age_dat), ]
 
-    dat = read.csv("../data/raccoon_age_intensity.csv")
+    dat = read.csv(datasource)
     means = array(NA, dim=nrow(dat))
     prevs = array(NA, dim=nrow(dat))
 
@@ -75,11 +76,13 @@ simulate_and_compare = function(i, abc_params, time_steps=100){
     ex = abc_params_vect["ex"]
     ec = abc_params_vect["ec"]
     rp = abc_params_vect["rp"]
+    as = abc_params_vect["as"]
     ek = (1 - ex) / ex # Convert ex to ek
 
     params = get_simulation_parameters(TIME_STEPS=time_steps, 
                         RODENT_ENCOUNTER_PROB=rp, ENCOUNTER_K=ek, 
-                        EGG_CONTACT=ec, ENCOUNTER_MEAN=em)
+                        EGG_CONTACT=ec, ENCOUNTER_MEAN=em,
+                        AGE_SUSCEPTIBILITY=as)
 
     init_arrays = get_init_arrays(params) # Load in init arrays
     all_res = full_simulation(params, init_arrays, 
@@ -92,7 +95,7 @@ simulate_and_compare = function(i, abc_params, time_steps=100){
 
     summary_stats = compare_to_data(all_res, time_steps)
 
-    return(list(stats=summary_stats, params=c(em, ex, ec, rp)))
+    return(list(stats=summary_stats, params=c(em, ex, ec, rp, as)))
 
 }
 
@@ -121,18 +124,21 @@ distances = function(stats){
     sims = nrow(stats)
     non_zero_inds = apply(stats, 2, sd) > 0
     stats = stats[, non_zero_inds] # drop any constant columns as they don't help distinguish between distances
-    pca_stats = princomp(scale(stats))$scores
+    pca_stats = scale(stats)
+    # pca_stats = princomp(scale(stats))$scores
 
     # Convert observed into PCA space...what are the problems with this approach?
     # Essentially I am asking how similar is is the predicted data to the observed 
     # data when a remove correlations and standardize.
-    obs_dat = read.csv("../data/raccoon_age_intensity.csv")
+    obs_dat = read.csv(datasource)
 
     obs_stat = c(obs_dat$abundance, obs_dat$prev / 100)[non_zero_inds]
     scaled_obs = t(matrix((obs_stat - attr(scale(stats), "scaled:center")) / 
                         attr(scale(stats), "scaled:scale")))
-    loadings = eigen(cov(scale(stats)))$vectors
-    pca_obs = scaled_obs %*% loadings
+    pca_obs = scaled_obs
+
+    # loadings = eigen(cov(scale(stats)))$vectors
+    # pca_obs = scaled_obs %*% loadings
 
     # Distances between observed and predicted data
     dists = as.matrix(dist(rbind(pca_stats, pca_obs), method="euclidean"))[sims + 1, 1:(sims)]
@@ -160,25 +166,39 @@ resample_and_perturb = function(params, weights, num_samps, perturb_sds){
     new_param_inds = sample(inds, num_samps, replace=TRUE, prob=weights)
     new_params = params[new_param_inds, ]
 
+    # Uniform perturbation
     new_params_perturbed = t(apply(new_params, 1, 
             function(x) x + perturb_sds*runif(length(x), min=-1, max=1)))
 
-    # TODO: Ensure the these are giving the right results
-    #new_params_perturbed = check_params(new_params_perturbed)
+    # Normal perturbation
+    # new_params_perturbed = t(apply(new_params, 1, 
+    #         function(x) rnorm(length(x), mean=x, sd=perturb_sds)))
+
+    # Ensure the these are giving the right results
+    new_params_perturbed = check_params(new_params_perturbed, new_params)
     return(new_params_perturbed)
 
 }
 
-# check_params = function(params){
-#     # Makes sure each parameter is within its proper bounds
-#     upper = c(em=1000, ex=1, ec=10, rp=1)
-#     lower = c(em=10, ex=0, ec=0, rp=0)
+check_params = function(params_perturbed, params){
+    # Makes sure each parameter is within its proper bounds
+    # If a pertubation pushed it out set it to old parameters
 
-#     params[params > upper] = upper
-#     params[params < lower] = lower
+    dp = dim(params)
 
-#     return(params)
-# }
+    upper = matrix(rep(c(em=1000, ex=1, ec=100, rp=1, as=10), dp[1]), 
+                                nrow=dp[1], ncol=dp[2], byrow=T)
+    lower = matrix(rep(c(em=10, ex=0, ec=1, rp=0, as=0), dp[1]),
+                                nrow=dp[1], ncol=dp[2], byrow=T)
+
+
+    gt = params_perturbed >= upper
+    lt = params_perturbed <= lower 
+    params_perturbed[gt] = params[gt]
+    params_perturbed[lt] = params[lt]
+
+    return(params_perturbed)
+}
 
 get_particles = function(num_particles){
     # Sample num_particles parameter vectors from the prior distributions of 
@@ -191,11 +211,32 @@ get_particles = function(num_particles){
     # Prior distributions on parameters
     em = runif(num_particles, min=10, max=1000)
     ex = runif(num_particles, min=0, max=1)
-    ec = runif(num_particles, min=0, max=100)
+    ec = runif(num_particles, min=1, max=100)
     rp = runif(num_particles, min=0, max=1)
+    as = runif(num_particles, min=0, max=10)
 
-    params = cbind(em, ex, ec, rp)
+    params = cbind(em, ex, ec, rp, as)
     return(params)
+
+}
+
+particle_likelihood = function(particle){
+    # Calculate the likelihood of a particle (vector of parameters) given the
+    # prior distributions
+    #
+    # Returns
+    # -------
+    # : Matrix of parameters where each row is a parameter vector
+
+    # Prior distributions on parameters
+    em = dunif(particle['em'], min=10, max=1000)
+    ex = dunif(particle['ex'], min=0, max=1)
+    ec = dunif(particle['ec'], min=1, max=100)
+    rp = dunif(particle['rp'], min=0, max=1)
+    as = dunif(particle['as'], min=0, max=10)
+
+    part_like = prod(c(em, ex, ec, rp, as))
+    return(part_like)
 
 }
 
@@ -232,11 +273,15 @@ calculate_weights = function(prev_weights, prev_params,
             previous = prev_params[j, ]
             pw = prev_weights[j]
 
+            # Uniform perturbation
             vals = dunif((current - previous) / perturb_sds, min=-1, max=1)
+
+            # Normal perturbation
+            #vals = dnorm(current, mean=previous, sd=perturb_sds)
             marginal[j] = pw * prod(vals)
         }
 
-        weights[i] = 1 / sum(marginal)
+        weights[i] = 1 / sum(marginal) # 1 in numerator due to uniform dist
     }
 
     return(weights / sum(weights))
@@ -254,6 +299,8 @@ past_params = list()
 #perturb_sds = c(em=2, ex=0.02, ec=1, rp=0.02)
 
 for(t in 1:STEPS){
+
+    print(paste("Iteration", t))
 
     res = mclapply(1:num_particles, simulate_and_compare, current_params, mc.cores=4)
 
@@ -282,8 +329,6 @@ for(t in 1:STEPS){
     weight_array[[t]] = weights
 
     # Perturb using uniform perturbation
-
-    # TODO: CHECK PERTURBATION FOR OUT OF BOUND VALUES
     perturb_sds = apply(new_params, 2, sd) #(apply(new_params, 2, max) - apply(new_params, 2, min)) * 0.5 # From Filippi 2012
     current_params = resample_and_perturb(new_params, weights, num_particles, 
                             perturb_sds)
@@ -295,64 +340,57 @@ saveRDS(past_params, "past_params.rds")
 
 
 ## Plot trajectories from the mean parameters ##
-best_params = data.table(readRDS("past_params.rds")[[5]])
-best_params_m = data.frame(melt(best_params))
+# best_params = data.table(readRDS("past_params.rds")[[5]])
+# best_params_m = data.frame(melt(best_params))
 
-median_params = apply(best_params, 2, quantile, 0.5)
+# median_params = apply(best_params, 2, quantile, 0.5)
 
-params = get_simulation_parameters(TIME_STEPS=200, 
-                        RODENT_ENCOUNTER_PROB=median_params['rp'], 
-                        ENCOUNTER_K=median_params['ek'], 
-                        EGG_CONTACT=median_params['ec'], 
-                        ENCOUNTER_MEAN=median_params['em'])
+# params = get_simulation_parameters(TIME_STEPS=200, 
+#                         RODENT_ENCOUNTER_PROB=median_params['rp'], 
+#                         ENCOUNTER_K=median_params['ek'], 
+#                         EGG_CONTACT=median_params['ec'], 
+#                         ENCOUNTER_MEAN=300,
+#                         AGE_SUSCEPTIBILITY=100)#median_params['em'])
 
-init_arrays = get_init_arrays(params) # Load in init arrays
-all_res = full_simulation(params, init_arrays, 
-                                  cull_params=NULL, 
-                                  birth_control_params=NULL,
-                                  worm_control_params=NULL,
-                                  latrine_cleanup_params=NULL, 
-                                  management_time=1000,
-                                  print_it=TRUE)
+# init_arrays = get_init_arrays(params) # Load in init arrays
+# all_res = full_simulation(params, init_arrays, 
+#                                   cull_params=NULL, 
+#                                   birth_control_params=NULL,
+#                                   worm_control_params=NULL,
+#                                   latrine_cleanup_params=NULL, 
+#                                   management_time=1000,
+#                                   print_it=TRUE)
 
-NUM_DRAWS = 100
-obs = read.csv("../data/raccoon_age_intensity.csv")
-draw_results = list()
+# NUM_DRAWS = 100
+# obs = read.csv("../data/raccoon_age_intensity.csv")
+# draw_results = list()
 
-for(i in 1:NUM_DRAWS){
+# for(i in 1:NUM_DRAWS){
 
-    pred = compare_to_data(all_res, 200)
-    prev = pred[9:16]
-    abund = pred[1:8]
-    sim_num = rep(i, 8)
-    age = obs$age_lower
-    tres = cbind(sim_num, abund, prev, age)
+#     pred = compare_to_data(all_res, 200)
+#     prev = pred[9:16]
+#     abund = pred[1:8]
+#     sim_num = rep(i, 8)
+#     age = obs$age_lower
+#     tres = cbind(sim_num, abund, prev, age)
 
-    draw_results[[i]] = tres
-}
+#     draw_results[[i]] = tres
+# }
 
-draw_results = data.frame(do.call(rbind, draw_results))
-ggplot(draw_results, aes(x=age, y=abund, group=sim_num)) + geom_point() + 
-            geom_point(data=obs, aes(x=age_lower, y=abundance, color="red"))
-
-
-ggplot(draw_results, aes(x=age, y=prev, group=sim_num)) + geom_point() + 
-            geom_point(data=obs, aes(x=age_lower, y=prev/100, color="red")) + 
-            ylim(0, 1)
+# draw_results = data.frame(do.call(rbind, draw_results))
+# ggplot(draw_results, aes(x=age, y=abund, group=sim_num)) + geom_point() + 
+#             geom_point(data=obs, aes(x=age_lower, y=abundance, color="red"))
 
 
-
+# ggplot(draw_results, aes(x=age, y=prev, group=sim_num)) + geom_point() + 
+#             geom_point(data=obs, aes(x=age_lower, y=prev/100, color="red")) + 
+#             ylim(0, 1)
 
 
 
 
 
 
-# Step 2: Simulate model with drawn parameters
-# Step 3: Calculate distance between observed and simulated data
-#   - Do this in such a way that we can combine the two measures
-# Step 4: Repeat for X number of parameter draws
-# Step 5: Keep only the parameter combinations with 10% lowest distances
-# Step 6: Use importance resampling, a bootstrap filter and some perturbations
-# to smooth the particles and redraw from the weighted sample 
-# Repeat until the distribution does not change. \
+
+
+
