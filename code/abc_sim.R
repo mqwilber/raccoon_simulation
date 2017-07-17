@@ -340,51 +340,53 @@ saveRDS(past_params, "past_params.rds")
 
 
 ## Plot trajectories from the mean parameters ##
-# best_params = data.table(readRDS("past_params.rds")[[5]])
-# best_params_m = data.frame(melt(best_params))
+best_params = data.table(readRDS("past_params.rds")[[5]])
+best_params_m = data.frame(melt(best_params))
 
-# median_params = apply(best_params, 2, quantile, 0.5)
+median_params = apply(best_params, 2, quantile, 0.9)
 
-# params = get_simulation_parameters(TIME_STEPS=200, 
-#                         RODENT_ENCOUNTER_PROB=median_params['rp'], 
-#                         ENCOUNTER_K=median_params['ek'], 
-#                         EGG_CONTACT=median_params['ec'], 
-#                         ENCOUNTER_MEAN=300,
-#                         AGE_SUSCEPTIBILITY=100)#median_params['em'])
+params = get_simulation_parameters(TIME_STEPS=200, 
+                        RODENT_ENCOUNTER_PROB=median_params['rp'], 
+                        ENCOUNTER_K=(1 - median_params['ex']) / median_params['ex'], 
+                        EGG_CONTACT=median_params['ec'], 
+                        ENCOUNTER_MEAN=median_params['em'],
+                        AGE_SUSCEPTIBILITY=median_params['as'])#median_params['em'])
 
-# init_arrays = get_init_arrays(params) # Load in init arrays
-# all_res = full_simulation(params, init_arrays, 
-#                                   cull_params=NULL, 
-#                                   birth_control_params=NULL,
-#                                   worm_control_params=NULL,
-#                                   latrine_cleanup_params=NULL, 
-#                                   management_time=1000,
-#                                   print_it=TRUE)
+init_arrays = get_init_arrays(params) # Load in init arrays
+all_res = full_simulation(params, init_arrays, 
+                                  cull_params=NULL, 
+                                  birth_control_params=NULL,
+                                  worm_control_params=NULL,
+                                  latrine_cleanup_params=NULL, 
+                                  management_time=1000,
+                                  print_it=TRUE)
 
-# NUM_DRAWS = 100
-# obs = read.csv("../data/raccoon_age_intensity.csv")
-# draw_results = list()
+NUM_DRAWS = 100
+obs = read.csv(datasource) # Load observed data
+draw_results = list()
 
-# for(i in 1:NUM_DRAWS){
+for(i in 1:NUM_DRAWS){
 
-#     pred = compare_to_data(all_res, 200)
-#     prev = pred[9:16]
-#     abund = pred[1:8]
-#     sim_num = rep(i, 8)
-#     age = obs$age_lower
-#     tres = cbind(sim_num, abund, prev, age)
+    pred = compare_to_data(all_res, 200)
+    prev = pred[9:16]
+    abund = pred[1:8]
+    sim_num = rep(i, 8)
+    age = obs$age_lower
+    tres = cbind(sim_num, abund, prev, age)
 
-#     draw_results[[i]] = tres
-# }
+    draw_results[[i]] = tres
+}
 
-# draw_results = data.frame(do.call(rbind, draw_results))
-# ggplot(draw_results, aes(x=age, y=abund, group=sim_num)) + geom_point() + 
-#             geom_point(data=obs, aes(x=age_lower, y=abundance, color="red"))
+draw_results = data.frame(do.call(rbind, draw_results))
+ggplot(draw_results, aes(x=age, y=abund, group=sim_num)) + geom_point() + 
+            geom_point(data=obs, aes(x=age_lower, y=abundance, color="red")) +
+            geom_errorbar(data=obs, aes(x=age_lower, ymin=abund_lower, ymax=abund_upper, color="red"))
 
 
-# ggplot(draw_results, aes(x=age, y=prev, group=sim_num)) + geom_point() + 
-#             geom_point(data=obs, aes(x=age_lower, y=prev/100, color="red")) + 
-#             ylim(0, 1)
+ggplot(draw_results, aes(x=age, y=prev, group=sim_num)) + geom_point() + 
+            geom_point(data=obs, aes(x=age_lower, y=prev/100, color="red")) + 
+            geom_errorbar(data=obs, aes(x=age_lower, ymin=prev_lower/100, ymax=prev_upper/100, color="red")) +
+            ylim(0, 1)
 
 
 

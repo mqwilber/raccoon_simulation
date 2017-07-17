@@ -1220,7 +1220,6 @@ full_simulation = function(prms, init_arrays, cull_params=NULL,
                                             prms$EGG_CONTACT, age_now, 
                                             prms$AGE_SUSCEPTIBILITY)
 
-
                 if(age_now > prms$AGE_EGG_RESISTANCE){ # Can pick up worms from rodent
 
                     worms_acquired_from_rodent = pick_up_rodents(rodent_mean_array[time - 1, zone_now],
