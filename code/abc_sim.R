@@ -186,9 +186,9 @@ check_params = function(params_perturbed, params){
 
     dp = dim(params)
 
-    upper = matrix(rep(c(em=1000, ex=1, ec=100, rp=1, as=10), dp[1]), 
+    upper = matrix(rep(c(em=1000, ex=1, ec=5, rp=1, as=10), dp[1]), 
                                 nrow=dp[1], ncol=dp[2], byrow=T)
-    lower = matrix(rep(c(em=10, ex=0, ec=1, rp=0, as=0), dp[1]),
+    lower = matrix(rep(c(em=10, ex=0, ec=0.001, rp=0, as=0), dp[1]),
                                 nrow=dp[1], ncol=dp[2], byrow=T)
 
 
@@ -211,7 +211,7 @@ get_particles = function(num_particles){
     # Prior distributions on parameters
     em = runif(num_particles, min=10, max=1000)
     ex = runif(num_particles, min=0, max=1)
-    ec = runif(num_particles, min=1, max=100)
+    ec = runif(num_particles, min=0.001, max=5)
     rp = runif(num_particles, min=0, max=1)
     as = runif(num_particles, min=0, max=10)
 
@@ -231,7 +231,7 @@ particle_likelihood = function(particle){
     # Prior distributions on parameters
     em = dunif(particle['em'], min=10, max=1000)
     ex = dunif(particle['ex'], min=0, max=1)
-    ec = dunif(particle['ec'], min=1, max=100)
+    ec = dunif(particle['ec'], min=0.001, max=5)
     rp = dunif(particle['rp'], min=0, max=1)
     as = dunif(particle['as'], min=0, max=10)
 
@@ -336,57 +336,58 @@ for(t in 1:STEPS){
     prev_params = new_params
 }
 
-saveRDS(past_params, "past_params.rds")
+saveRDS(past_params, "past_params_concomitant.rds")
 
 
 ## Plot trajectories from the mean parameters ##
-best_params = data.table(readRDS("past_params.rds")[[5]])
-best_params_m = data.frame(melt(best_params))
+# best_params = data.table(readRDS("past_params_concomitant.rds")[[5]])
+# best_params_m = data.frame(melt(best_params))
 
-median_params = apply(best_params, 2, quantile, 0.9)
+# median_params = apply(best_params, 2, quantile, 0.5)
 
-params = get_simulation_parameters(TIME_STEPS=200, 
-                        RODENT_ENCOUNTER_PROB=median_params['rp'], 
-                        ENCOUNTER_K=(1 - median_params['ex']) / median_params['ex'], 
-                        EGG_CONTACT=median_params['ec'], 
-                        ENCOUNTER_MEAN=median_params['em'],
-                        AGE_SUSCEPTIBILITY=median_params['as'])#median_params['em'])
+# params = get_simulation_parameters(TIME_STEPS=100, 
+#                         RODENT_ENCOUNTER_PROB=median_params['rp'], 
+#                         ENCOUNTER_K=0.1,#(1 - median_params['ex']) / median_params['ex'], 
+#                         EGG_CONTACT=median_params['ec'], 
+#                         ENCOUNTER_MEAN=400,
+#                         AGE_SUSCEPTIBILITY=10,
+#                         AGE_EGG_RESISTANCE=4)#median_params['em'])
 
-init_arrays = get_init_arrays(params) # Load in init arrays
-all_res = full_simulation(params, init_arrays, 
-                                  cull_params=NULL, 
-                                  birth_control_params=NULL,
-                                  worm_control_params=NULL,
-                                  latrine_cleanup_params=NULL, 
-                                  management_time=1000,
-                                  print_it=TRUE)
+# init_arrays = get_init_arrays(params) # Load in init arrays
+# all_res = full_simulation(params, init_arrays, 
+#                                   cull_params=NULL, 
+#                                   birth_control_params=NULL,
+#                                   worm_control_params=NULL,
+#                                   latrine_cleanup_params=NULL, 
+#                                   management_time=1000,
+#                                   print_it=TRUE)
 
-NUM_DRAWS = 100
-obs = read.csv(datasource) # Load observed data
-draw_results = list()
+# NUM_DRAWS = 100
+# obs = read.csv(datasource) # Load observed data
+# draw_results = list()
 
-for(i in 1:NUM_DRAWS){
+# for(i in 1:NUM_DRAWS){
 
-    pred = compare_to_data(all_res, 200)
-    prev = pred[9:16]
-    abund = pred[1:8]
-    sim_num = rep(i, 8)
-    age = obs$age_lower
-    tres = cbind(sim_num, abund, prev, age)
+#     pred = compare_to_data(all_res, 100)
+#     prev = pred[9:16]
+#     abund = pred[1:8]
+#     sim_num = rep(i, 8)
+#     age = obs$age_lower
+#     tres = cbind(sim_num, abund, prev, age)
 
-    draw_results[[i]] = tres
-}
+#     draw_results[[i]] = tres
+# }
 
-draw_results = data.frame(do.call(rbind, draw_results))
-ggplot(draw_results, aes(x=age, y=abund, group=sim_num)) + geom_point() + 
-            geom_point(data=obs, aes(x=age_lower, y=abundance, color="red")) +
-            geom_errorbar(data=obs, aes(x=age_lower, ymin=abund_lower, ymax=abund_upper, color="red"))
+# draw_results = data.frame(do.call(rbind, draw_results))
+# ggplot(draw_results, aes(x=age, y=abund, group=sim_num)) + geom_point() + 
+#             geom_point(data=obs, aes(x=age_lower, y=abundance, color="red")) +
+#             geom_errorbar(data=obs, aes(x=age_lower, ymin=abund_lower, ymax=abund_upper, color="red"))
 
 
-ggplot(draw_results, aes(x=age, y=prev, group=sim_num)) + geom_point() + 
-            geom_point(data=obs, aes(x=age_lower, y=prev/100, color="red")) + 
-            geom_errorbar(data=obs, aes(x=age_lower, ymin=prev_lower/100, ymax=prev_upper/100, color="red")) +
-            ylim(0, 1)
+# ggplot(draw_results, aes(x=age, y=prev, group=sim_num)) + geom_point() + 
+#             geom_point(data=obs, aes(x=age_lower, y=prev/100, color="red")) + 
+#             geom_errorbar(data=obs, aes(x=age_lower, ymin=prev_lower/100, ymax=prev_upper/100, color="red")) +
+#             ylim(0, 1)
 
 
 

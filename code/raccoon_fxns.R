@@ -330,7 +330,7 @@ give_birth = function(age_now, time, tot_racs, repro_able,
 
 
 pick_up_eggs = function(emean, ek, infect, resist, eggs_environ, load,
-                            egg_contact_param, age, age_immunity){
+                            egg_contact_param, age, age_immunity, age_resistance){
     # Function for juvenile raccoons to pick up eggs
     #
     # Parameters
@@ -347,11 +347,11 @@ pick_up_eggs = function(emean, ek, infect, resist, eggs_environ, load,
     # Exponential decline of infectivity.with load and age
     infect_red = infect * exp(-resist * load)
 
-    if(age <= 4){
+    if(age <= age_resistance){
         infect_red = infect_red
     } else{
         # Exponential decline in susceptability with age after age 4
-        infect_red = infect_red * exp(-age_immunity * (age - 4))
+        infect_red = infect_red * exp(-age_immunity * (age - age_resistance))
     }
 
     # Encounter and get eggs on face and get infected with eggs
@@ -887,7 +887,7 @@ get_simulation_parameters = function(...){
     RANDOM_DEATH_PROB = 0.01 # Lower bound to death prob
     OLD_DEATH = (1 / (20 * 12)^2) # Above 20 years old the raccoon dies
     AGE_EGG_RESISTANCE = 4 # Age above which raccoons start to loose susceptibility to eggs
-    AGE_SUSCEPTIBILITY = 0.1 # How susceptability declines with age.
+    AGE_SUSCEPTIBILITY = 10000 # How susceptibility declines with age. Arbitrarily large such that it starts immediately after age 4
     RODENT_ENCOUNTER_PROB = 0.5 # Monthly probability of encountering a rodent
     INIT_WORMS = 10 # Initial number of non-rodent worms in raccoons
 
@@ -1218,7 +1218,8 @@ full_simulation = function(prms, init_arrays, cull_params=NULL,
                                             eggs_remaining[zone_now],
                                             raccoon_worm_array[time - 1, rac],
                                             prms$EGG_CONTACT, age_now, 
-                                            prms$AGE_SUSCEPTIBILITY)
+                                            prms$AGE_SUSCEPTIBILITY,
+                                            prms$AGE_EGG_RESISTANCE)
 
                 if(age_now > prms$AGE_EGG_RESISTANCE){ # Can pick up worms from rodent
 
