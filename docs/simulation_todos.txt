@@ -1,0 +1,10 @@
+## Sept. 22
+
+1. Need to figure out how to include variance measures in the age intensity profile estimation.
+2. Need to do some sanity checks to figure out if the fitting method can actually recover known parameters.
+3. Need to use the estimated parameters to explore the efficacy of management strategies. 
+4. Need to perform sensitivity analyses on some of these parameters. 
+
+Some other thoughts
+
+1. It would probably be significantly faster to run this model in C or C++.  However, does it make sense to re-learn C and re-code this model, or run with it as is?  We can parallelize the R code, but with my rudimentary parallelizing skills it is not an insane gain in speed.  But would we really gain much speed in C++? I need to re-learn it anyway, so it could be a good excuse...
