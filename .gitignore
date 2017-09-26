@@ -1,1 +1,7 @@
 results/plots/*
+code/sim_data.csv
+docs/*.synctex.gz
+docs/*.log
+docs/*.fls
+docs/*.fdb_latexmk
+docs/*.aux

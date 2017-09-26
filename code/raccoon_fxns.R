@@ -455,6 +455,11 @@ get_eprob = function(eggs_environ, egg_contact_param){
 
 }
 
+clear_worms = function(clear_prob){
+    # Does a raccoon clear worms or not given some prob?
+    return(rbinom(1, 1, clear_prob))
+}
+
 assign_human_contacts = function(num_racs){
     # Assign probabilities of human contacts
     return(runif(num_racs))
@@ -890,6 +895,7 @@ get_simulation_parameters = function(...){
     AGE_SUSCEPTIBILITY = 10000 # How susceptibility declines with age. Arbitrarily large such that it starts immediately after age 4
     RODENT_ENCOUNTER_PROB = 0.5 # Monthly probability of encountering a rodent
     INIT_WORMS = 10 # Initial number of non-rodent worms in raccoons
+    CLEAR_PROB = 0 # Probability of raccoon above age 4 clearing worm load. No clearance as default
 
     ## Rodent parameters
     MOUSE_WORM_MEAN = 3.49 # Abundance of worms in peromyscus estimated from Sara's data
@@ -962,7 +968,8 @@ get_simulation_parameters = function(...){
                 WORM_SURV_SLOPE=WORM_SURV_SLOPE,
                 TIME_STEPS=TIME_STEPS,
                 ZONES=ZONES,
-                AGE_SUSCEPTIBILITY=AGE_SUSCEPTIBILITY)
+                AGE_SUSCEPTIBILITY=AGE_SUSCEPTIBILITY,
+                CLEAR_PROB=CLEAR_PROB)
 
     new_params = list(...)
 
@@ -1221,6 +1228,9 @@ full_simulation = function(prms, init_arrays, cull_params=NULL,
                                             prms$AGE_SUSCEPTIBILITY,
                                             prms$AGE_EGG_RESISTANCE)
 
+                # Raccoons can't clear worms
+                keepworms = 1
+
                 if(age_now > prms$AGE_EGG_RESISTANCE){ # Can pick up worms from rodent
 
                     worms_acquired_from_rodent = pick_up_rodents(rodent_mean_array[time - 1, zone_now],
@@ -1229,11 +1239,12 @@ full_simulation = function(prms, init_arrays, cull_params=NULL,
                                                      prms$LARVAL_WORM_INFECTIVITY)
 
                     worms_acquired = worms_acquired + worms_acquired_from_rodent
+                    keepworms = 1 - clear_worms(prms$CLEAR_PROB)
 
                 }
 
                 infra_worm_array[[rac]][time, time] = worms_acquired
-                raccoon_worm_array[time, rac] = sum(infra_worm_array[[rac]][time, ], na.rm=T)
+                raccoon_worm_array[time, rac] = keepworms*sum(infra_worm_array[[rac]][time, ], na.rm=T)
 
                 # }
 
