@@ -26,9 +26,37 @@ write.csv(sim_data, "sim_data.csv", row.names=FALSE)
 
 # Use the ABC method to estimate the parameters of the model given the simulated
 # data
+steps = 5
+particles = 10000
+percent_rj = 0.05
+cores = 10
 abc_fit = run_abc(4, 48, datasource="sim_data.csv", percent_rj=.40, cores=4)
 
 # Save results
 
 sim_results = list(abc_fit, model_params)
 saveRDS(sim_results, "test_abc_results.rds")
+
+# Make some plots of the ABC results
+library(ggplot2)
+library(data.table)
+library(gridExtra)
+
+# Examine the posterior distributions after ABC
+plots = list()
+
+for(i in 1:5){
+
+    tdat = melt(abc_fit[[i]])
+    colnames(tdat) = c("index", "param", "value")
+    tdat$param = plyr::revalue(tdat$param, replace=c("ex"="encounter agg.", "em"="encounter mean",
+                                  "ec"="egg contact decay", 
+                                  "rp"="rodent encounter prob."))
+
+    plots[[i]] = ggplot(data=tdat, aes(x=value)) + geom_histogram() + 
+                    facet_wrap(~param, scales="free") +
+                    ggtitle(paste("Iteration", i))
+}
+
+
+do.call(grid.arrange, plots)
