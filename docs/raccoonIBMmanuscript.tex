@@ -16,7 +16,7 @@
 \bigskip
 
 \noindent
-\textbf{Running title}: 
+\textbf{Running title}: Managing a macroparasite: leveraging data and models to mitigate human risk of raccoon roundworm infection [too specific?]
 
 \bigskip
 
@@ -27,8 +27,8 @@
 
 \noindent
 \textbf{Author affiliations}: \\
-1. 
-2. Ecology, Evolution and Marine Biology, University of California, Santa Barbara, Santa Barbara, CA, 93106
+1. \\
+2. Ecology, Evolution and Marine Biology, University of California, Santa Barbara, Santa Barbara, CA, 93106 \\
 
 \bigskip
 
@@ -56,52 +56,50 @@ Wildlife disease, Zoonosis, Parasite, Management\ldots{}..
 
 \section{Introduction}
 
-Rinderpest is eliminated (), rabies is reduced (Freuiling et al 2013), and strategies are currently being developed to manage the impact of infectious disease in a number of other wildlife systems [CWD, Koala STDs, . In many cases, these management feats have been
-guided by mathematical models. While numerous models exist for managing
-viral, bacterial and protozoan agents in wildlife [give examples, many found in McCallum], models directed
-towards managing wildlife macroparasites are lacking \citep{McCallum2017}.
+Rinderpest is eliminated \citep{Roeder2011}, rabies is reduced \citep{Freuling2013}, and strategies are currently being implemented to manage infectious disease in a number of other wildlife systems [CWD, Koala STDs, etc.]. In many cases, these management strategies have been
+guided by mathematical models \citep[e.g.][]{Restif2012,McCallum2017}.  Mathematical models are an important component when managing wildlife disease because the can be used to inform field-based management \emph{a priori} and assess the efficacy of a management strategy \emph{post-hoc} \citep{Restif2012}.  While number of models have been successfully applied to managing
+viral, bacterial and protozoan agents in wildlife populations [give examples, many found in McCallum], models directed
+towards managing wildlife macroparasites are still lacking \citep[][, but note significant work has been done in managing macroparasites in livestock populations (citaitons)]{McCallum2017}.
 
-This is likely due to two reasons. First, macroparasites, such as helminths and arthropod ectoparasites that do no directly reproduce within a host \citep{AndersonandMay1979}, often have complex life cycles and tend to effect host fecundity and mortality in an intensity-dependent manner. While these characteristics by no means preclude modeling, they do require models that track the distribution of parasite loads across hosts in addition to the total host population and mean parasite load \citep{AndersonandMay1978}.  These types of models can quickly become challenging to implement and analyze when they are built to ask system-specific questions of parasite management \citep{McCallum2017}.  Second, in contrast the dramatic effects that microparasite epidemics can have on wildlife populations (Citations), the role of macroparasites in regulating wildlife populations is less clear \citep{Tompkins2002,Tompkins2011}, making the need to develop macroparasite models for disease management less obvious [I don't want to sound like I am saying this is unimportant...]
+The scarcity of management-based models for macroparasites in wildlife is likely driven by two reasons. First, macroparasites, such as helminths that do no directly reproduce within a host \citep{AndersonandMay1979}, often have complex life cycles and tend to have load-dependent effects on host fecundity and mortality. While these characteristics by no means preclude modeling of macroparasites in wildlife, they do require models that track the distribution of parasite loads across hosts in addition to the total host population and mean parasite load \citep{AndersonandMay1978}.  These types of models can quickly become challenging to implement, parameterize, and analyze when they are built to ask system-specific questions regarding parasite management in wildlife systems \citep{McCallum2017}.  Second, in contrast the dramatic effects that microparasite epidemics can have on wildlife populations (Prairie dog epidemics, the mongollian herd epidemic, sea star wasting disease, avian bird flue, etc.), the role of macroparasites as a general regulating factor of wildlife populations is unclear \citep{Tompkins2002,Tompkins2011}. This has potentially made the perceived need for detailed macroparasite models in managed wildlife systems less critical. [but see X and X for some important exceptions...I don't like this sentence]. However, macroparasites that have equivocal effects on the dynamics of wildlife populations can still be an important concern for human health (Page, Graeff, Kazacos).  To manage this risk to human health, macroparasite models are needed that simultaneously incorporate the macroparasite dynamics in a wildlife reservoir as well as the the risk this reservoir poses to human populations.  
 
-However, a number macroparasites that have equivocal effects on the dynamics of wildlife populations are still an important concern for human health (Page, Graeff, Kazacos).  For example, raccoon roundworm is increasingly recognized as a threat to both human
-and wildlife health (Page, Graeff, Kazacos), but, like many
+The macroparasite raccoon roundworm is increasingly recognized as a threat to both human
+and wildlife health \citep{Page2011,Weinstein2017}, but, like many
 macroparasites, is difficult to control due to its complex life cycle
 and resistant environmental infectious stages. Worms mature in the
 raccoon gut and infected raccoons can release over a million parasite
-eggs per day (). Eggs survive for over a year (Shafir) and accumulate at
-communal raccoon defecation sites termed latrines (). Individual
+eggs per day [citation]. Eggs survive for over a year (Shafir) and accumulate at
+communal raccoon defecation sites termed latrines [citation]. Individual
 raccoons contribute to multiple latrines and these contaminated sites
 expose raccoons and other species to eggs. Eggs infect juvenile
 raccoons, leading to high parasite loads in animals as young as four
-months (Weinstein 2016, Kazacos, Boyce). Raccoon susceptibility to eggs
+months \citep{Weinstein2016} [TODO: Fill in these citations: Kazacos, Boyce]. Raccoon susceptibility to eggs
 declines with age and adult raccoons acquire worms by eating infected
-small mammals and birds (). In these birds and mammals, larval worms do
+small mammals and birds [citation]. In these birds and mammals, larval worms do
 not mature. Instead, larval worms migrate from the gut into other
 tissues including the brain, often causing fatal neurological damage.
-Raccoons scavenge these incapacitated animals (), and this trophic
+Raccoons scavenge these incapacitated animals [citation], and this trophic
 transmission maintains infection in older raccoons that are less
-susceptible to eggs (). Nearly all infected raccoons release eggs;
+susceptible to eggs [citation]. Nearly all infected raccoons release eggs;
 however higher parasite loads in juveniles suggests that this age class
-contributes disproportionately to human disease risk ().
+contributes disproportionately to human disease risk [citation].
 
 Human risk might be reduced by removing \emph{B. procyonis} eggs from
 the environment, treating infected raccoons, or reducing raccoon
-populations. Culling is often considered the simplest and cheapest
-disease control strategy (). However, although a common component of
-rabies control (Rosatte et al., 1986), culling is controversial and not
-always effective (Choisy and Rohani, 2006; Woodroffe et al., 2006;
-Morters et al., 2013). Birth control is a less controversial method to
-reduce wildlife populations (smith 2002), but is often slower, more
-expensive, and less effective than culling (). As an alternative to
+populations. Culling is often considered as a possible control
+disease control strategy \citep{Wasserberg2009,Langwig2015}. However, although a common component of
+rabies control \citep{Rosatte1986}, culling is controversial and not
+always effective \citep{Choisy2006a,Beeton2011,Morters2013}. Birth control is a less controversial method to
+reduce wildlife populations \citep{Smith2002a}, but is often slower, more
+expensive, and less effective than culling (citations). As an alternative to
 reducing host populations, parasite populations can be reduced through
 mass drug administration (Qureshi 1994 et al, deer fascioloides) or
 vaccination (anthrax antelope De vos 1973 Koedoe, bison; elk brucellosis
 (rabies). Although no \emph{Baylisascaris} vaccines exist, the mass
 baiting methods developed for rabies vaccines can also deliver deworming
-medication (anthelminthics) (Smyser et al., 2015). These anthelminthic
+medication (anthelminthics) \citep{Smyser2015} [What about Smyser 2013?]. These anthelminthic
 baits can reduce \emph{B. procyonis} prevalence in wild raccoons, but
-raccoons are rapidly re-infected unless latrines are also removed (Page
-et al., 2011; Page et al., 2014). Latrine, parasite, and raccoon removal
+raccoons are rapidly re-infected unless latrines are also removed \citep{Page2011} [citation for Page et al. 2014?]. Latrine, parasite, and raccoon removal
 all could reduce human \emph{B. procyonis} exposure; however,
 experiments that compare these strategies are difficult to implement in
 wild animal populations.
@@ -115,8 +113,7 @@ In this study we use a combination of previously published results, field estima
 To evaluate raccoon roundworm management strategies, we built an
 individual-based model for a macroparasite with long-live
 environmental infectious stages and complex life cycle. We describe this
-model using the Overview, Design concepts, Details (ODD) protocol (Grimm
-et al. 2006, 2010), providing first an Overview of the model, then
+model using the Overview, Design concepts, Details (ODD) protocol \citep{Grimm2006,Grimm2010}, providing first an Overview of the model, then
 describing the Design Concepts, followed by the Details of submodels,
 parameterization and initialization. Additional details on submodels and
 annotated code are available in the Supplementary Material.
@@ -358,7 +355,7 @@ procyonis} system, we then implemented the ABC-SMC algorithm as follows \citep{S
   We then repeated 3 - 9 with the 10,000 perturbed parameters 5
   times with one important change to step 9 after the first round of
   sampling. After identifying 500 accepted particles we used the
-  following function to weight each particle: {[}X{]}. This is the
+  following function to weight each particle: X. This is the
   importance weighting of a particle that accounts for the fact that
   particles are no longer being sampled from the prior distribution \citep{Beaumont2010}
   (DOUBLE CHECK WORDING).
@@ -386,9 +383,16 @@ anti-helmenthic baiting, and latrine cleanup. For each of these
 management strategies, we considered different levels of management
 effort (see below for definitions) and explored how different management
 strategy-by-effort combinations affected four major predictions of the
-model: 1. The total raccoon population 2. The total worm population 3.
-The level of human risk [define above] and 4. The mean raccoon worm
-load. For each management strategy, the model was run for 200 months to
+model: 
+
+\begin{enumerate}
+    \item The total raccoon population 
+    \item The total worm population
+    \item The level of human risk [define above]
+    \item The mean raccoon worm load
+\end{enumerate}
+
+For each management strategy, the model was run for 200 months to
 obtain equilibrium dynamics, at which time the management strategy was
 enacted monthly for an additional 200 months (FIG. X). Upon completion
 of the simulation, the four major model predictions listed above were
@@ -397,15 +401,18 @@ months of the simulations.
 
 The different management strategies were implemented as follows
 
-\emph{Culling raccoons} [This section could probably use some
-background on culling\ldots ]
+\bigskip
+\noindent
+\emph{Culling raccoons}
+
+[SARA: Could you add a paragraph on culling?]
 
 To implement raccoon culling, we assumed that some number of traps were
 randomly distributed in the raccoon world each month. We assumed that
 per trap probability of catching a raccoon increased with raccoon
-density following a type I functional response: 1 -- exp(-raccoon
-density * \textbackslash{}gamma). \textbackslash{}gamma was estimated
-based raccoon trapping data from Prange et al. (2003) and Graser et al.
+density following a type I functional response: $1 - \exp(-\text{raccoon
+density} \gamma)$. $\gamma$ was estimated
+based raccoon trapping data from  Prange et al. (2003) and Graser et al.
 (2012) {[}probably more description here\ldots{}{]}. Finally, we assumed
 that the number of raccoons were caught each month followed a
 num\_trapped \textasciitilde{} Binomal(N, p) where the p = probability
@@ -423,16 +430,22 @@ be trapped and culled. When trapping for a particular target age class,
 trapping proceeded as described above, but raccoons that were not in the
 target age class were released.
 
-\emph{Birth Control} [This section could probably use some background
-on birth control]
+\bigskip
+\noindent
+\emph{Birth Control}
+
+[SARA: Could you add a few sentences on birth control]
 
 Birth control followed the exact same trapping regime as culling.
 However, upon trapping a raccoon its reproductive ability was set to
 zero for the remainder of its life {[}TODO: define reproductive ability
 above{]}
 
-\emph{Anti-helminthic baiting} [This section could probably use some
-background on baiting]
+\bigskip
+\noindent
+\emph{Anti-helminthic baiting}
+
+[SARA: Could you add some information on anti-helminthic baiting]
 
 We implemented anti-helminthic baiting by first randomly distributing
 some number of baits into the raccoon world. Of the initial number of
@@ -448,7 +461,9 @@ effects on raccoon worm loads. Similar to culling and birth control, we
 also allowed for anti-helminthic baiting in specific zones of human
 overlap.
 
-\emph{Latrine cleanup} [again, section needs some background]
+\emph{Latrine cleanup}
+
+[SARA: Could you add dome background information]
 
 The final management strategy we explored was latrine cleanup. {[}Define
 latrine here or above?{]}. This strategy was implemented reducing or
