@@ -56,37 +56,14 @@ Wildlife disease, Zoonosis, Parasite, Management\ldots{}..
 
 \section{Introduction}
 
-Rinderpest is eliminated (), rabies is reduced (), and other wildlife
-microparasite epidemics something. These management feats have been
+Rinderpest is eliminated (), rabies is reduced (Freuiling et al 2013), and strategies are currently being developed to manage the impact of infectious disease in a number of other wildlife systems [CWD, Koala STDs, . In many cases, these management feats have been
 guided by mathematical models. While numerous models exist for managing
-viral, bacterial and protozoan agents in wildlife (), models directed
-towards managing wildlife macroparasites are lacking (McCallum 2017).
-This is because macroparasites, like helminths, require more complex
-models that incorporate infection load, heterogeneity and complex life
-cycles. These complexities often make it untenable to use standard
-modeling approaches (e.g. ordinary differential equations at the
-population-level) {[}WC{]} and individual-based models are often needed
-when modeling macroparasite systems (McCallum and others). The advantage
-of using individual-based models for host-macroparasite systems is that
-it is straight-forward to capture the aforementioned complexities of
-macroparasite systems and their effects on host-parasite dynamics can be
-explored. This is useful when the goal is, for example, to use the model
-to evaluate the efficacy of different management strategies on some
-measure of macroparasite disease risk {[}Drawert, others{]}. However,
-this additional complexity almost guarantees that the model will not be
-analytically tractable, such that intensive simulation is necessary to
-explore the characteristics of the model. Moreover, individual-based
-models often have a number of unknown parameters and it is unclear
-whether standard parasitological data, such as age-intensity profiles,
-is sufficient to estimate these model parameters. Here, we build an
-individual-based macroparasite model for the widespread zoonotic raccoon
-parasite, raccoon roundworm (\emph{Baylisascaris procyonis}). We show
-how this model can be parameterized this model with commonly collected
-parasitological data and then use this evaluate management strategies
-that target both host and parasite populations. {[}General concluding
-sentence showing the knowledge gap we are filling in disease ecology{]}
+viral, bacterial and protozoan agents in wildlife [give examples, many found in McCallum], models directed
+towards managing wildlife macroparasites are lacking \citep{McCallum2017}.
 
-Raccoon roundworm is increasingly recognized as a threat to both human
+This is likely due to two reasons. First, macroparasites, such as helminths and arthropod ectoparasites that do no directly reproduce within a host \citep{AndersonandMay1979}, often have complex life cycles and tend to effect host fecundity and mortality in an intensity-dependent manner. While these characteristics by no means preclude modeling, they do require models that track the distribution of parasite loads across hosts in addition to the total host population and mean parasite load \citep{AndersonandMay1978}.  These types of models can quickly become challenging to implement and analyze when they are built to ask system-specific questions of parasite management \citep{McCallum2017}.  Second, in contrast the dramatic effects that microparasite epidemics can have on wildlife populations (Citations), the role of macroparasites in regulating wildlife populations is less clear \citep{Tompkins2002,Tompkins2011}, making the need to develop macroparasite models for disease management less obvious [I don't want to sound like I am saying this is unimportant...]
+
+However, a number macroparasites that have equivocal effects on the dynamics of wildlife populations are still an important concern for human health (Page, Graeff, Kazacos).  For example, raccoon roundworm is increasingly recognized as a threat to both human
 and wildlife health (Page, Graeff, Kazacos), but, like many
 macroparasites, is difficult to control due to its complex life cycle
 and resistant environmental infectious stages. Worms mature in the
@@ -105,7 +82,7 @@ Raccoons scavenge these incapacitated animals (), and this trophic
 transmission maintains infection in older raccoons that are less
 susceptible to eggs (). Nearly all infected raccoons release eggs;
 however higher parasite loads in juveniles suggests that this age class
-contributes disproportionately to human disease risk().
+contributes disproportionately to human disease risk ().
 
 Human risk might be reduced by removing \emph{B. procyonis} eggs from
 the environment, treating infected raccoons, or reducing raccoon
@@ -129,22 +106,14 @@ all could reduce human \emph{B. procyonis} exposure; however,
 experiments that compare these strategies are difficult to implement in
 wild animal populations.
 
-Here we build an individual based macroparasite model to examine raccoon
-roundworm management strategies. Parameterized with values from
-literature and field data, this model captures the seasonal and age
-based infection heterogeneity commonly observed in wild raccoon
-populations. With this model, we examined how culling, birth control,
-anthelminthic baiting, and latrine clean-up affected raccoon
-populations, parasite populations, and human disease risk. We find KEY
-RESULTS\ldots{}. And implication about raccoons/general macroparasite
-management.
+In this study we use a combination of previously published results, field estimated parameters, and model fitting approaches to parameterize an individual-based model of raccoon roundworm.  We use this model to investigate how different raccoon roundworm management strategies affect human risk of \emph{B. procyonis} infection. As in many models of infectious disease, the structure of parasite transmission is one of the most important, yet challenging, portions of the host-parasite interaction to estimate.  Combining age-intensity with Approximate Bayesian Computing (ABC), we attempt to infer certain characteristics of the transmission function in raccoon roundworm systems.  Given that age-intensity and -prevalence data are commonly collected in parasitological studies, our approach highlights that, given some prior knowledge of the basic biology driving a host-parasite system, this type of data can be used to make inference about the transmission process [WC: Inference isn't really the right word...]. [GENERAL STATEMENT]
 
 \section{Methods}
 
 \subsection{Model Description}
 
 To evaluate raccoon roundworm management strategies, we built an
-individual-based model in R () for a macroparasite with long-live
+individual-based model for a macroparasite with long-live
 environmental infectious stages and complex life cycle. We describe this
 model using the Overview, Design concepts, Details (ODD) protocol (Grimm
 et al. 2006, 2010), providing first an Overview of the model, then
@@ -164,22 +133,21 @@ human exposure.
 \subsubsection{Entities, state variables, and scales}
 
 In this model, raccoon are the main model entity and exist as an age
-structured, closed all-female population. Five state variables and
-attributes describe each raccoon: its identification number, age, alive
-or dead status, location and parasite load. We track the female parasite
-load (infrapopulation) within each raccoon. Raccoons can acquire new
-worms at each time step and, for each raccoon, we explicitly track each
-worm cohorts' age. Worms accumulate (and die) over time, and we
-calculate parasite load by summing parasite cohorts within each raccoon.
+structured, closed, all-female population. Five attributes describe each raccoon: an identification number, an age, an alive
+or dead status, a location and a parasite load. We track the female parasite
+load (i.e. the infrapopulation) within each raccoon. Raccoons can acquire new
+worms at each time step and, for each raccoon, we explicitly track the age of each
+worm cohort. Worms accumulate and die over time, and we
+calculate parasite load by summing across parasite cohorts within each raccoon.
 Infected raccoons contaminate the environment with long-lived parasite
 eggs, which we model as an environmental egg pool. As even a single worm
-can produce more than a million eggs per month, we assume that infected
+can produce more than a million eggs per month [citation], we assume that infected
 raccoons rapidly saturate local latrines with eggs. Thus, we do not
 explicitly track each egg, and instead use infection prevalence in the
 local raccoon population as a proxy for local egg production. Eggs decay
 over time () and we calculate the current environmental egg pool as a
-weighted sum of past egg production. Eggs infect rodents and we use the
-environmental egg pool to estimate rodent infection at each time step.
+weighted sum of past egg production. Eggs also infect rodents that co-occur with raccoons. We use the
+environmental egg pool to estimate rodent infection at each time step. [However, because \emph{B. procyonis} is not reproductive in rodents, infected rodents do not directly contribute to the environmental egg pool.]
 
 We track hosts, parasites, and environmental egg pools in a spatially
 implicit 20 km\textsuperscript{2} world with 10 equally sized 2
@@ -192,8 +160,7 @@ calculate total human risk within the simulated world.
 
 \subsubsection{Process overview and scheduling}
 
-We update the model at each monthly time step, first determining
-individual raccoon survival. Surviving raccoons then reproduce, lose
+We update the model on a monthly time step. The first event that occurs in a time step is raccoon survival. Surviving raccoons then reproduce, lose
 parasites, gain parasites, disperse, age, and contribute to the
 environmental egg pool. Following the typical raccoon life cycle,
 raccoons reproduce once per year, with kits entering the population in
@@ -205,7 +172,7 @@ zones.
 \subsubsection{Emergence and Interactions}
 
 Although some infectious agents can regulate their hosts (), raccoon
-roundworm does not regulate raccoons. Unmanaged raccoon populations are
+roundworm does not regulate raccoons [citations]. Unmanaged raccoon populations are
 limited by resource availability (), which we model by setting a raccoon
 carrying capacity in each zone. Following the Ricker function (Gurney
 and Nisbet, Hastings et al 2012), as raccoon population density
@@ -218,18 +185,14 @@ We add macroparasites to this simulated raccoon population following
 classic macroparasite modeling theory (eg. Anderson and May, Cornell,
 McCallum). Individual host-parasite interactions generate an aggregated
 parasite population with realistic age-intensity and age-prevalence
-profiles. {[} is this emergent? given we allow for overdispersion in how
-many worms raccoons pick up{]}. The parasite population cycles due to
+profiles. The parasite population cycles due to
 changing host demography, and these emergent patterns match the widely
 observed fall rise in mean raccoon parasite loads (eg page 2016,
 weinstein2016, many others).
 
 \subsubsection{Stochasticity}
 
-We determine model events with a random draw from a parameterized
-probability distribution using random number generators in R version X
-(R core Team). As a result, each parameter includes both a mean value
-and a distribution .
+We determine the following modeling events using a random number generator in R version X: raccoon survival (0=death, 1=alive), raccoon reproduction (0=no reproduction, 1=reproduction), raccoon litter size (0 [CHECK], 1, 2 kits), raccoon dispersal (CHECK), parasite loss (), and parasite gain ().  Each of these probability of a particular realization of any of these events depends on the biology of the raccoon-\emph{B. procyonis} described in \emph{Submodels}.
 
 \subsubsection{Initialization}
 
@@ -237,10 +200,10 @@ We began each simulation with 500 two-year old raccoons stochastically
 distributed throughout the 20 km\textsuperscript{2} world according to
 zone specific carrying capacities (average starting zone density: ).
 Initially, each raccoon hosted 10 worms and no eggs contaminated any
-zones. The mean rodent worm load (mu) was initially mu = 3.49 based on
-empirical observations {[}citation{]} and the variance of rodent worms
+zones. The mean rodent worm load was initially 3.49 based on
+empirical observations (X) and the variance of rodent worms
 was set to 87.08 based on the canonical scaling relationship between
-log-mean parasite load and log variance (Shaw and Dobson 1995).
+log-mean parasite load and log variance in parasite load \citep{Shaw1995}.
 
 \subsection{Submodels}
 
@@ -266,10 +229,7 @@ we used the logistic parasite-induced mortality function
 , where \textbackslash{}alpha gives the per parasite effect on the log
 odds raccoon survival probability and \textbackslash{}beta roughly
 corresponds to the threshold at which parasite-induced mortality begins
-to occur. We estimated these parameters using the aforementioned data
-and{]}. Our parameterization corresponds with the empirical observation
-that parasite-induced mortality is not a large factor affecting raccoon
-dynamics.
+to occur \citep{Wilber2016}. We estimated these parameters using the aforementioned data [which data]. Our parameterization corresponds with the empirical observation that parasite-induced mortality is not a large factor affecting raccoon dynamics.
 
 \subsubsection{Raccoon reproduction}
 
@@ -293,11 +253,13 @@ function (Table X).
 Raccoons acquire \emph{B. procyonis} through two transmission routes:
 encounter with \emph{B. procyonis} eggs in the environment and by
 consuming other animals already infected with \emph{B. procyonis} adults
-(e.g. rodents) (citations).
+(e.g. rodents) (citations).  We assume that raccoons encounter eggs with some probability that is proportional to the total number of eggs in the environment (on a zone-dependent basis). Conditional on encountering eggs, the total number of eggs encountered follows a negative binomial distribution with a fixed aggregation parameter and fixed number of mean eggs encountered.  Finally, the probability that any one of these eggs actually infects the raccoon is a decreasing function of how infected the raccoon (i.e. increased load decreases susceptibility) and is zero if the raccoon is older than 4 months (citations). Finally, the worms are acquired from rodents if the raccoon is older than 4 months.  Rodents are encountered and consumed with some probability and the number of worms in the rodent follows a negative binomial distribution with the mean that has a maximum value of 3.49 worms per mouse and decreases with decreasing environmental egg pool. As stated above, variance scales with the mean according to Taylor's Power Law \citep{Shaw1995}.  The aggregation parameter and mean parameter when encountering eggs in the environment, the parameter the determines how encounter probability scales with the size of the environmental egg pool, and the rodent encounter probability are all estimated using the ABC method described below.
 
 \subsubsection{Worm death}
 
-\subsection{Fitting Susceptibility and Transmission Parameters with ABC-SMC}
+Worms die according to an age-dependent survival function that follows the logistic curve $\frac{1}{\exp(-(a + b \text{age})}$.  This means that in any time step, worms of age \emph{age} have a probability of dying according to the above function (Fig X).  This function was parameterized with data from Olsen 1958 [Sara, more detail about this study here].  Note that we do not include any negative density-dependence in parasite death rate as we instead included this density-dependence in the probability of a worm successfully establishing (see \emph{Worm transmission}).
+
+\subsection{Fitting susceptibility and transmission parameters with ABC-SMC}
 
 As described in Table X, most of the parameters in this model were
 estimated based on previous \emph{B. procyonis} studies in other systems
@@ -313,34 +275,33 @@ parameter determining how concomitant immunity increases with raccoon
 age (Table X).
 
 To estimate these parameters, we used Approximate Bayesian Computing
-with Sequential Monte Carlo (ABC-SMC) (Sisson et al. 2007, Beaumont
-2010, Kosmala et al. 2015). ABC is typically referred to as a likelihood
+with Sequential Monte Carlo (ABC-SMC) \citep{Sisson2009,Beaumont2010,Kosmala2015}. ABC is typically referred to as a likelihood
 free parameter estimation method and is often used with simulation-based
 models in which the likelihood of a data point given the model is
 intractable to compute. Instead, ABC uses a user-defined distance
 function to determine how ``well'' the simulation model parameterized
 with a set of parameters drawn from some prior distribution can
 reproduce the observed data. This approach allows one to estimate an
-approximate posterior distribution for unknown parameters in model based
+approximate posterior distribution for unknown parameters in a model based
 on how well they can reproduce observed data.
 
 To use ABC to parameterize the unknown parameters in the
 raccoon-\emph{B. procyonis} IBM, we used observed age-abundance and
 prevalence profiles for raccoons and \emph{B. procyonis} in our system
-of interest (Weinstein 2017, Fig. X). For many mammal macroparasite
+of interest \citep{Weinstein2016}. For many mammal macroparasite
 systems, this type of intensity and prevalence data is the best
 available parasitological data as longitudinal, individual-based
 measures of worm intensity are nearly impossible due to both the
 difficulty of re-trapping individual hosts and the destructive nature of
-measuring parasite loads {[}though I think fecal egg counts can give a
-good estimate of infection intensity in some cases\ldots{}Sara?{]}.
+measuring parasite loads.
 Therefore, developing methods to estimate transmission and
 susceptibility parameters from this type of data is important for a
 wide-range of host-macroparasite systems.
 
 Using this age-intensity/prevalence data for the raccoon-\emph{B.
-procyonis} system, we then implemented the ABC-SMC algorithm as follows
-(citations)
+procyonis} system, we then implemented the ABC-SMC algorithm as follows \citep{Sisson2009,Toni2009}
+
+
 
 \begin{enumerate}
 \def\labelenumi{\arabic{enumi}.}
@@ -357,51 +318,50 @@ procyonis} system, we then implemented the ABC-SMC algorithm as follows
 \item
   For a given simulation, we then sampled 189 raccoons over the last 24
   months of the simulation which is consistent with the number of
-  raccoons used to build the age- abundance/prevalence profiles given in
-  Weinstein (2017). Specifically, we distributed these 189 sampled
-  raccoons according the eight age classes given in Weinstein (2017).
+  raccoons used to build the age- abundance/prevalence profiles given in \cite{Weinstein2016}. Specifically, we distributed these 189 sampled
+  raccoons according the eight age classes given in \cite{Weinstein2016}.
 \item
   Using this sample, we then constructed the age-abundance/prevalence
   profile from the simulated data and compared it to the observed age-
   abundance/prevalence.
 \item
   To compare the simulated and observed data, we first combined the
-  eight observed age-abundance data points and the eight observed
-  age-prevalence data points into a vector S\_obs = {[}age-intensity\_1,
-  age-intensity\_2, \ldots{}, age-intensity\_8, age-prev\_1,
-  age-prev\_2, \ldots{}, age-prev\_8{]}. We did the same thing for all
+  eight observed age-abundance data points, the eight observed interquartile ranges for the age-abundance data points, and the eight observed
+  age-prevalence data points into a vector S$_\text{obs}$ = [age-intensity$_1$,
+  age-intensity$_2$, \ldots{}, age-intensity\_8, iqr$_1$, iqr$_2$, \ldots{}, iqr$_8$, age-prev$_1$,
+  age-prev$_2$, \ldots{}, age-prev$_8$]. We did the same thing for all
   10,000 simulated age-abundance/prevalence profiles such that we had a
-  10,000 x 16 matrix S\_sim where the columns matched the 16 dimensions
-  in S\_obs and the rows corresponded to one of the randomly drawn
+  10,000 x 24 matrix S$_\text{sim}$ where the columns matched the 24 dimensions
+  in S$_\text{obs}$ and the rows corresponded to one of the randomly drawn
   particles.
 \item
   To put the abundance measures and the prevalence data on the same
-  scale, we standardized each column in S\_sim by subtracting the mean
+  scale, we standardized each column in S$_\text{sim}$ by subtracting the mean
   and dividing by the standard deviation of each column. We then
-  performed this identical transformation on S\_obs \emph{based on the
-  column-wise means and standard deviations from S\_sim}. This
-  transformation of S\_obs put the values of S\_obs in terms of
+  performed this identical transformation on S$_\text{obs}$ \emph{based on the
+  column-wise means and standard deviations from S$_\text{sim}$}. This
+  transformation of S$_\text{obs}$ put the values of S$_\text{obs}$ in terms of
   deviations relative to the mean of the simulated data.
 \item
-  We then calculated the Euclidean distance between each row in S\_sim
-  and S\_obs (i.e. the L2 norm), which resulted in 10,000 distance
-  measures. We then accepted the 1,000 particles that resulted in the
-  1,000 smallest distances.
+  We then calculated the Euclidean distance between each row in S$_\text{sim}$
+  and S$_\text{obs}$ (i.e. the L2 norm), which resulted in 10,000 distance
+  measures. We then accepted the 500 particles that resulted in the
+  500 smallest distances.
 \item
-  We then equally weighted each of these 1,000 accepted particles and
+  We then equally weighted each of these 500 accepted particles and
   resampled them with replacement 10,000 times. The upon sampling a
   particle, we perturbed each parameter in a particle using
-  \textbackslash{}sigma\_i U(-1, 1) where sigma is the standard
-  deviation of the ith parameter in the 1,000 accepted parameters. The
+ $\sigma_i$ $\times$ $Uniform(-1, 1)$ where sigma is the standard
+  deviation of the ith parameter in the 500 accepted parameters. This
   perturbation helps the algorithm explore nearby parameter space.
 \item
-  We then repeated 3- 9 with the 10,000 perturbed parameters {[}five{]}
+  We then repeated 3 - 9 with the 10,000 perturbed parameters 5
   times with one important change to step 9 after the first round of
-  sampling. After identifying 1,000 accepted particles we used the
+  sampling. After identifying 500 accepted particles we used the
   following function to weight each particle: {[}X{]}. This is the
   importance weighting of a particle that accounts for the fact that
-  particles are no longer being sampled from the prior distribution
-  (Beaumont 2010; DOUBLE CHECK WORDING).
+  particles are no longer being sampled from the prior distribution \citep{Beaumont2010}
+  (DOUBLE CHECK WORDING).
 \item
   After the fifth iteration {[}check{]}, the particles converged on a
   posterior distribution {[}How did we determine this\ldots{}deviation
@@ -411,18 +371,15 @@ procyonis} system, we then implemented the ABC-SMC algorithm as follows
 This algorithm provided posterior distributions for the five unknown
 transmission and susceptibility parameters in the raccoon-\emph{B.
 procyonis} model using commonly obtained age-abundance/prevalence
-profiles.
+profiles.  
 
-{[}TODO\ldots{}not sure if this is true yet: We confirmed this algorithm
-could also recover known transmission and susceptibility parameters
-based on simulated age-abundance and age-prevalence profiles. (Some
-parameters might be unidentifiable\ldots{}){]}
+Before applying this algorithm to the empirical raccoon-\emph{B. procyonis} data, we tested the ability of this algorithm to recover known transmission parameters from age-intensity/prevalence data.  To do this, we fixed the four parameters of interest at specific, known values and simulated the raccoon IBM for 100 years (Supplementary Material).  We then sampled 189 raccoons present over the last two years of the model with the same age-structure as given in \cite{Weinstein2016} and considered this our ``observed \emph{in silico}'' data.  We then ran the ABC-SMC algorithm using this ``observed \emph{in silico}'' data and found that we could recover the true mean number of eggs encountered, the variability in eggs encountered, and the probability of encountering a rodent with some specificity, but could not reliably recover the egg contact parameter [WC] (see Supplementary Material). [Post-hoc simulation analyses illustrated that this parameter has little influence on the resulting age-intensity/age-prevalence profiles, which is consistent with the ABC-SMC algorithm not being able to identify it (Supplementary Material).] With this caveat in mind, we applied the ABC-SMC algorithm to the observed age-intensity/prevalence data from \cite{Weinstein2016}.
 
 \subsection{Management Strategies for \emph{B. procyonis}}
 
 We used our fully parameterized model to explore of how different
 management strategies affected the dynamics of worm and raccoon
-populations and human risk from \emph{B. procyonis}. We considered four
+populations and human risk of encounter with \emph{B. procyonis}. We considered four
 distinct management strategies in addition to combinations of these
 management strategies: culling raccoons, birth control of raccoons,
 anti-helmenthic baiting, and latrine cleanup. For each of these
@@ -430,18 +387,18 @@ management strategies, we considered different levels of management
 effort (see below for definitions) and explored how different management
 strategy-by-effort combinations affected four major predictions of the
 model: 1. The total raccoon population 2. The total worm population 3.
-The level of human risk {[}define above{]} and 4. The mean raccoon worm
+The level of human risk [define above] and 4. The mean raccoon worm
 load. For each management strategy, the model was run for 200 months to
 obtain equilibrium dynamics, at which time the management strategy was
 enacted monthly for an additional 200 months (FIG. X). Upon completion
 of the simulation, the four major model predictions listed above were
-computed based on the mean {[}max, min, var, too{]} over the last 24
+computed based on the mean [max, min, var, too] over the last 24
 months of the simulations.
 
 The different management strategies were implemented as follows
 
-\emph{Culling raccoons} {[}This section could probably use some
-background on culling\ldots{}{]}
+\emph{Culling raccoons} [This section could probably use some
+background on culling\ldots ]
 
 To implement raccoon culling, we assumed that some number of traps were
 randomly distributed in the raccoon world each month. We assumed that
@@ -466,16 +423,16 @@ be trapped and culled. When trapping for a particular target age class,
 trapping proceeded as described above, but raccoons that were not in the
 target age class were released.
 
-\emph{Birth Control} {[}This section could probably use some background
-on birth control{]}
+\emph{Birth Control} [This section could probably use some background
+on birth control]
 
 Birth control followed the exact same trapping regime as culling.
 However, upon trapping a raccoon its reproductive ability was set to
 zero for the remainder of its life {[}TODO: define reproductive ability
 above{]}
 
-\emph{Anti-helminthic baiting} {[}This section could probably use some
-background on baiting{]}
+\emph{Anti-helminthic baiting} [This section could probably use some
+background on baiting]
 
 We implemented anti-helminthic baiting by first randomly distributing
 some number of baits into the raccoon world. Of the initial number of
@@ -491,7 +448,7 @@ effects on raccoon worm loads. Similar to culling and birth control, we
 also allowed for anti-helminthic baiting in specific zones of human
 overlap.
 
-\emph{Latrine cleanup} {[}again, section needs some background{]}
+\emph{Latrine cleanup} [again, section needs some background]
 
 The final management strategy we explored was latrine cleanup. {[}Define
 latrine here or above?{]}. This strategy was implemented reducing or
@@ -686,6 +643,9 @@ paper should appear here.
 \end{itemize}
 
 \textbf{Appendices}
+
+\bibliographystyle{/Users/mqwilber/Dropbox/Documents/Bibformats/ecology.bst}
+\bibliography{/Users/mqwilber/Dropbox/Documents/Bibfiles/Projects_and_Permits-raccoon_IBM.bib}
 
 
 \end{document}

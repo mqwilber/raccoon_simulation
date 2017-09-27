@@ -5,3 +5,5 @@ docs/*.log
 docs/*.fls
 docs/*.fdb_latexmk
 docs/*.aux
+docs/*.bbl
+docs/*.blg
