@@ -302,10 +302,7 @@ build_simulated_datasets = function(model_params, num_sets=1, TIME_STEPS=100,
                         RODENT_ENCOUNTER_PROB=model_params[['RODENT_ENCOUNTER_PROB']], #median_params['rp'], 
                         ENCOUNTER_K=model_params[["ENCOUNTER_K"]],
                         EGG_CONTACT=model_params[['EGG_CONTACT']],
-                        ENCOUNTER_MEAN=model_params[['ENCOUNTER_MEAN']], #median_params['em'],
-                        AGE_SUSCEPTIBILITY=model_params[['AGE_SUSCEPTIBILITY']], #median_params['as'],
-                        CLEAR_PROB=model_params[['CLEAR_PROB']], #median_params['cp'],
-                        AGE_EGG_RESISTANCE=model_params[['AGE_EGG_RESISTANCE']]) #median_params['em'])
+                        ENCOUNTER_MEAN=model_params[['ENCOUNTER_MEAN']]) #median_params['em'],
 
     init_arrays = get_init_arrays(params) # Load in init arrays
     all_res = full_simulation(params, init_arrays, 

@@ -867,8 +867,6 @@ plot_worm_traj_total = function(raccoon_worm_array){
 }
 
 
-
-
 ## Get parameters and arrays ##
 
 get_simulation_parameters = function(...){
@@ -1141,7 +1139,7 @@ full_simulation = function(prms, init_arrays, cull_params=NULL,
                 lower = ceiling(latrine_cleanup_params$overlap_threshold * prms$ZONES)
 
                     eggproduction_array[1:(time - 1), lower:prms$ZONES] = 
-                        eggproduction_array[1:(time - 1), lower:prms$ZONES] * 0#* (1 - latrine_cleanup_params$cleanup_efficiency)
+                        eggproduction_array[1:(time - 1), lower:prms$ZONES] * (1 - latrine_cleanup_params$quota) # quota is an effeciency between 0 and 1
             }
 
 
@@ -1316,7 +1314,7 @@ full_simulation = function(prms, init_arrays, cull_params=NULL,
 run_and_extract_results = function(i, quota, management_time, 
                                     cull_params, birth_control_params, 
                                     worm_control_params, latrine_cleanup_params, 
-                                    time_steps){
+                                    time_steps, fitted_params=list()){
     # Runs simulations and extracts results for a given quota. 
     # Extracts results from last 12 months of the simulation.
     #
@@ -1329,10 +1327,12 @@ run_and_extract_results = function(i, quota, management_time,
     # cull_params , birth_control_params, worm_control_params, latrine_cleanup_params : 
     #               Management parameters.
     # time_steps : int, number of time steps in the simulation
+    # fitted_params: list, containing named parameters that are to be set in the model by default
 
     print(paste("Simulation", i, "for quota", quota))
 
-    params = get_simulation_parameters(TIME_STEPS=time_steps) # Load in simulation parameters
+    fitted_params[['TIME_STEPS']] = time_steps
+    params = do.call(get_simulation_parameters, fitted_params) # Load in simulation parameters
     init_arrays = get_init_arrays(params) # Load in init arrays
 
     all_res = full_simulation(params, init_arrays,
@@ -1380,4 +1380,18 @@ run_and_extract_results = function(i, quota, management_time,
              min_prev, mean_prev, max_prev,
              min_intensity, mean_intensity, max_intensity))
 
+}
+
+get_fitted_params = function(fitted_path){
+    # Extract the fitted data from the fitted path
+
+    fitted_dat = readRDS(fitted_path)
+    sampled_params = fitted_dat[[1]][[length(fitted_dat[[1]])]]
+
+    medians = apply(sampled_params, 2, quantile, 0.5)
+    names(medians) = c("ENCOUNTER_MEAN", "ENCOUNTER_K", "EGG_CONTACT", 
+                                    "RODENT_ENCOUNTER_PROB")
+    medians['ENCOUNTER_K'] = (1 - medians['ENCOUNTER_K']) / medians['ENCOUNTER_K']
+
+    return(as.list(medians))
 }

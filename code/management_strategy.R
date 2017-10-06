@@ -23,18 +23,29 @@
 library(parallel)
 # library(profvis)
 source("raccoon_fxns.R") # Load in the helper functions
-set.seed(1)
+#set.seed(1)
 
 
 # A vector that can contain 1 or more of the three analyses
 # "single sim", "one management", "two_management"
 simulation_types = c("single sim")#c("one management", "two management") #"single sim" # Either single sim, one management bulk, or two management bulk 
 
+
 results_dir = "../test_dir"
+fitted_path = "fit_abc_results.rds"
 cores = 8
 SIMS = 40
 management_time = 100
 time_steps = 300
+use_fitted = TRUE
+
+
+# Load the ABC-SMC fitted transmission parameters
+if(use_fitted){
+    fitted_params = get_fitted_params(fitted_path)
+} else{
+    fitted_params = list()
+}
 
 
 col_names = c("min_rac_pop", "mean_rac_pop", "max_rac_pop", 
@@ -50,17 +61,18 @@ if(any(simulation_types == "single sim")) { # Run a single simulation
     cull_params = list(strategy="random", quota=500, overlap_threshold=0.4, age=12)
     birth_control_params = list(strategy="human", quota=1000, overlap_threshold=0.5)
     worm_control_params = list(strategy="random", quota=10000, overlap_threshold=0.8)
-    latrine_cleanup_params = list(strategy="human", overlap_threshold=0.5, cleanup_efficiency=1)
+    latrine_cleanup_params = list(strategy="human", overlap_threshold=0.3, quota=0.5)
 
     management_time = 100
-    time_steps = 200
-    params = get_simulation_parameters(TIME_STEPS=time_steps)
+    time_steps = 5
+    fitted_params[['TIME_STEPS']] = time_steps
+    params = do.call(get_simulation_parameters, fitted_params)
     init_arrays = get_init_arrays(params) # Load in init arrays
     all_res = full_simulation(params, init_arrays, 
                               cull_params=NULL, 
                               birth_control_params=NULL,
                               worm_control_params=NULL,
-                              latrine_cleanup_params=NULL, 
+                              latrine_cleanup_params=latrine_cleanup_params, 
                               management_time=management_time,
                               print_it=TRUE)
 
@@ -103,7 +115,7 @@ if(any(simulation_types == "one management")) {
                                 birth_control_params=NULL,
                                 worm_control_params=NULL,
                                 latrine_cleanup_params=
-                                    list("human"=seq(0, 1, by=0.1))))
+                                    list("human"=c(0.1, 0.5, 0.9))))
 
 
     for(scenario_nm in names(management_scenarios)) {
@@ -125,7 +137,7 @@ if(any(simulation_types == "one management")) {
         if(scenario_nm == "worm_control_only"){
             quotas = c(0, 1, 10, 100, 1000, 10000, 100000)
         } else if(scenario_nm == "latrine_cleanup_only"){
-            quotas = c(1) # There are no quotas in the latrine control
+            quotas = c(0, 0.1, 0.5, 1) # Quotas are cleaning efficiencies of latrines (proportions between 0 and 1)
         } else{
            quotas = c(0, 10, 20, 50, 100, 500, 1000, 5000) 
         }
@@ -156,9 +168,10 @@ if(any(simulation_types == "one management")) {
                                                         quotas[j], management_time, 
                                                         cull_params, birth_control_params,
                                                         worm_control_params, latrine_cleanup_params, 
-                                                        time_steps, 
+                                                        time_steps, fitted_params, 
                                                         mc.cores=cores)
-
+                    
+                    # Cull is a stand in for any management...not just culling
                     cull_matrix = do.call(rbind, sim_vals)
 
                     cull_means = colMeans(cull_matrix, na.rm=TRUE)
