@@ -1,12 +1,13 @@
-## ABC-SMC algorithm for estimating two/three parameters of RacoonWormModel.
-## T
+## ABC-SMC algorithm for estimating four unknown parameters of RacoonWormModel.
+## 
+## Author: Mark Wilber
 
 library(parallel)
 library(ggplot2)
-source("raccoon_fxns.R")
+source("raccoon_fxns.R") # Contains functions for simulating IBM
 
-compare_to_data = function(all_res, time_steps, 
-                    datasource="../data/raccoon_age_intensity.csv", lag=24){
+compare_to_data = function(all_res, time_steps, stat_set="all", 
+                    datasource="../data/formatted/raccoon_age_intensity_full.csv", lag=24){
     # Given a simulation result, extract the simulation data that matches with
     # the empirical data so they can be compared.
     #
@@ -16,13 +17,21 @@ compare_to_data = function(all_res, time_steps,
     # time_steps : number of time steps the model was run for
     # lag : the number of time steps at the end of the model from which to
     #       extract raccoons to compare to data
+    # datasource : File that holds the empirical data/simulated data
+    # stat_set : str, "all": use mean, prev and IQR
+    #                 "means": use only means
+    #                 "prevs" : use only prevs
+    #                 "means_iqr" : use means and iqr
+    #                 "means_prevs" : use means and prevs
     #
     # Returns
     # ------
     # : means, prevs, iqrs
     #    means is the age-abundance profile of raccoons for the same age bins
     #    as the and prevs is the age-prevalence profile. iqrs is the
-    #    interquartile range for the abundance in each age class.
+    #    interquartile range for the abundance in each age class. Depending
+    #    on the stat_set argument, only particular combinations of these may be
+    #    returned.
 
     ages = all_res$age_array[(time_steps + 1 - lag):(time_steps + 1), ]
     dim(ages) = NULL
@@ -52,19 +61,31 @@ compare_to_data = function(all_res, time_steps,
 
     }
 
-    return(c(means, prevs, iqrs))
+    if(stat_set == "all")
+        stats = c(means, prevs, iqrs)
+    else if(stat_set == "means")
+        stats = c(means)
+    else if(stat_set == "prevs")
+        stats = c(prevs)
+    else if(stat_set == "means_prevs")
+        stats = c(means, prevs)
+
+    return(stats)
 }
 
-simulate_and_compare = function(i, abc_params, time_steps=100, 
-                            datasource="../data/raccoon_age_intensity.csv"){
+simulate_and_compare = function(i, abc_params, time_steps=100, stat_set="all",
+                            datasource="../data/formatted/raccoon_age_intensity_full.csv"){
     # Simulate the raccoon model and compare it to the age intensity/prevalence
     # data.
     #
     # Parameters
     # ----------
+    # i : int, and index for simulating and tracking progress
     # abc_params : matrix of N rows and 4 columns where the columns correspond
     #               to the four parameters of interest drawn from their priors
     # time_steps : How many time steps to run the model.
+    # stat_set : see `compare_to_data` function
+    # datasource : path to the observed data
     #
     # Returns
     # -------
@@ -95,13 +116,16 @@ simulate_and_compare = function(i, abc_params, time_steps=100,
                                   management_time=1000,
                                   print_it=FALSE)
 
-    summary_stats = compare_to_data(all_res, time_steps, datasource=datasource)
+    summary_stats = compare_to_data(all_res, time_steps, stat_set=stat_set, 
+                                        datasource=datasource)
 
     return(list(stats=summary_stats, params=c(em, ex, ec, rp)))
 
 }
 
-distances = function(stats, datasource="../data/raccoon_age_intensity.csv"){
+distances = function(stats, method="euclidean",
+                    stat_set="all", 
+                    datasource="../data/formatted/raccoon_age_intensity_full.csv"){
     # Get distances between stats and observed vector. Standardize and 
     # convert into pca space to deal with different scales and eliminate
     # correlation.  Distances are calculated as Euclidean distances after 
@@ -112,6 +136,8 @@ distances = function(stats, datasource="../data/raccoon_age_intensity.csv"){
     # ----------
     # stats : Matrix of summary statistics (16 columns) that holds
     #           age-intensity/prevalence profiles from the simulations
+    # method : Can be any distance method that is taken by the `dist` function in R.
+    #          "euclidean" is the L2 norm and "manhattan" is the L1 norm. 
     #
     # Returns
     # -------
@@ -134,7 +160,15 @@ distances = function(stats, datasource="../data/raccoon_age_intensity.csv"){
     # data when a remove correlations and standardize.
     obs_dat = read.csv(datasource)
 
-    obs_stat = c(obs_dat$abundance, obs_dat$prev / 100, obs_dat$iqr)[non_zero_inds]
+    if(stat_set == "all")
+        obs_stat = c(obs_dat$abundance, obs_dat$prev / 100, obs_dat$iqr)[non_zero_inds]
+    else if(stat_set == "means")
+        obs_stat = c(obs_dat$abundance)[non_zero_inds]
+    else if(stat_set == "prevs")
+        obs_stat = c(obs_dat$prev / 100)[non_zero_inds]
+    else if(stat_set == "means_prevs")
+        obs_stat = c(obs_dat$abundance, obs_dat$prev / 100)[non_zero_inds]
+
     scaled_obs = t(matrix((obs_stat - attr(scale(stats), "scaled:center")) / 
                         attr(scale(stats), "scaled:scale")))
     pca_obs = scaled_obs
@@ -143,7 +177,7 @@ distances = function(stats, datasource="../data/raccoon_age_intensity.csv"){
     # pca_obs = scaled_obs %*% loadings
 
     # Distances between observed and predicted data
-    dists = as.matrix(dist(rbind(pca_stats, pca_obs), method="euclidean"))[sims + 1, 1:(sims)]
+    dists = as.matrix(dist(rbind(pca_stats, pca_obs), method=method))[sims + 1, 1:(sims)]
 
     return(dists)
 }
@@ -176,7 +210,8 @@ resample_and_perturb = function(params, weights, num_samps, perturb_sds){
     # new_params_perturbed = t(apply(new_params, 1, 
     #         function(x) rnorm(length(x), mean=x, sd=perturb_sds)))
 
-    # Ensure the these are giving the right results
+    # Ensure the newly perturbed parameters are not violating the priors. If so
+    # sample them again
     new_params_perturbed = check_params(new_params_perturbed, new_params)
     return(new_params_perturbed)
 
@@ -184,7 +219,8 @@ resample_and_perturb = function(params, weights, num_samps, perturb_sds){
 
 check_params = function(params_perturbed, params){
     # Makes sure each parameter is within its proper bounds
-    # If a pertubation pushed it out set it to old parameters (TODO: Change this to simply resample)
+    # If a pertubation pushed it out, set it to old parameters 
+    # (TODO: Change this to simply resample)
 
     dp = dim(params)
 
@@ -288,7 +324,7 @@ calculate_weights = function(prev_weights, prev_params,
 }
 
 build_simulated_datasets = function(model_params, num_sets=1, TIME_STEPS=100,
-                                datasource="../data/raccoon_age_intensity.csv"){
+                                datasource="../data/formatted/raccoon_age_intensity_full.csv"){
     # Simulate the raccoon IBM and then build a mock dataset
     #
     # Parameters
@@ -332,8 +368,8 @@ build_simulated_datasets = function(model_params, num_sets=1, TIME_STEPS=100,
     return(mock_datasets)
 }
 
-run_abc = function(steps, num_particles, 
-            datasource="../data/raccoon_age_intensity.csv", percent_rj=0.05,
+run_abc = function(steps, num_particles,  stat_set="all", method="euclidean",
+            datasource="../data/formatted/raccoon_age_intensity_full.csv", percent_rj=0.05,
             cores=4){
     # Run the abc algorithm for some steps and some particles to fit raccoon
     # model based on some age-intensity profile in datasource.
@@ -342,6 +378,8 @@ run_abc = function(steps, num_particles,
     # ----------
     # steps: int, number of iterations in the sequential monte carlo
     # num_particles: int, number of particles (parameter vectors) to sample
+    # stat_set : str, see `compare_to_data` function
+    # method : str, method for calculating distance
     # datasource: str, path to the data to which the model is being fit
     #
     # Returns
@@ -362,9 +400,9 @@ run_abc = function(steps, num_particles,
 
         print(paste("Iteration", t))
 
-        # Parallezigin
+        # Parallelizing
         res = mclapply(1:num_particles, simulate_and_compare, current_params, 
-                                datasource=datasource, 
+                                datasource=datasource, stat_set=stat_set,
                                 mc.cores=cores)
 
         # Extract the results
@@ -372,7 +410,8 @@ run_abc = function(steps, num_particles,
         params = do.call(rbind, lapply(res, function(x) x$params))
 
         # Standardize and convert the predicted statistics into PCA space
-        dists = distances(stats, datasource=datasource)
+        dists = distances(stats, method=method, stat_set=stat_set, 
+                                                datasource=datasource)
 
         # Extract the alpha = X% smallest distances
         lower = quantile(dists, c(percent_rj))
@@ -401,45 +440,4 @@ run_abc = function(steps, num_particles,
 
     return(list(past_params=past_params, weight_array=weight_array))
 }
-
-
-
-#     saveRDS(past_params, "known_params.rds")
-
-
-#     ## Plot trajectories from the mean parameters ##
-#     best_params = data.table(readRDS("known_params.rds")[[5]])
-#     best_params_m = data.frame(melt(best_params))
-
-#     median_params = apply(best_params, 2, quantile, 0.25)
-
-#     model_params = list(RODENT_ENCOUNTER_PROB=0.544, #median_params['rp'], 
-#                             ENCOUNTER_K=1,#(1 - median_params['ex']) / median_params['ex'], 
-#                             EGG_CONTACT=3.696582, #median_params['ec'], 
-#                             ENCOUNTER_MEAN=459.174, #median_params['em'],
-#                             AGE_SUSCEPTIBILITY=10000, #median_params['as'],
-#                             CLEAR_PROB=0, #median_params['cp'],
-#                             AGE_EGG_RESISTANCE=4)
-
-#     draw_results = build_simulated_datasets(model_params, TIME_STEPS=100)
-
-#     draw_results = data.frame(do.call(rbind, draw_results))
-#     ggplot(draw_results, aes(x=age, y=abund, group=sim_num)) + geom_point() + 
-#                 geom_point(data=obs, aes(x=age_lower, y=abundance, color="red")) +
-#                 geom_errorbar(data=obs, aes(x=age_lower, ymin=abund_lower, ymax=abund_upper, color="red"))
-
-
-#     ggplot(draw_results, aes(x=age, y=prev, group=sim_num)) + geom_point() + 
-#                 geom_point(data=obs, aes(x=age_lower, y=prev/100, color="red")) + 
-#                 geom_errorbar(data=obs, aes(x=age_lower, ymin=prev_lower/100, ymax=prev_upper/100, color="red")) +
-#                 ylim(0, 1)
-
-# }
-
-
-
-
-
-
-
 
