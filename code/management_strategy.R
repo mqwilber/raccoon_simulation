@@ -58,21 +58,21 @@ col_names = c("min_rac_pop", "mean_rac_pop", "max_rac_pop",
 if(any(simulation_types == "single sim")) { # Run a single simulation
 
     # Simulation parameters
-    cull_params = list(strategy="random", quota=500, overlap_threshold=0.4, age=12)
-    birth_control_params = list(strategy="human", quota=1000, overlap_threshold=0.5)
+    cull_params = list(strategy="human", quota=500, overlap_threshold=0, age=12)
+    birth_control_params = list(strategy="random", quota=1000000, overlap_threshold=0.5)
     worm_control_params = list(strategy="random", quota=10000, overlap_threshold=0.8)
     latrine_cleanup_params = list(strategy="human", overlap_threshold=0.3, quota=0.5)
 
     management_time = 100
-    time_steps = 5
+    time_steps = 200
     fitted_params[['TIME_STEPS']] = time_steps
     params = do.call(get_simulation_parameters, fitted_params)
     init_arrays = get_init_arrays(params) # Load in init arrays
     all_res = full_simulation(params, init_arrays, 
                               cull_params=NULL, 
-                              birth_control_params=NULL,
+                              birth_control_params=birth_control_params,
                               worm_control_params=NULL,
-                              latrine_cleanup_params=latrine_cleanup_params, 
+                              latrine_cleanup_params=NULL, 
                               management_time=management_time,
                               print_it=TRUE)
 

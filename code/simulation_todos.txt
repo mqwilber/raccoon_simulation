@@ -1,0 +1,4 @@
+## Oct. 10
+
+1. Re-run test ABC results with broader priors.
+2. Re-run test ABC results with another parameter set.

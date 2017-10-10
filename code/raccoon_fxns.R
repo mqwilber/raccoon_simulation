@@ -486,7 +486,8 @@ assign_zone_dispersal = function(k_capacity, zone_density){
 
     zones = length(k_capacity)
 
-    # Add 0.1 to correct if no raccoons are in the zone
+    # Add 0.1 to correct if no raccoons are in the zone. This dampens the effect
+    # of an empty zone attracting all of the dispersing raccoons
     ratios = log(k_capacity / (zone_density + 0.1))
 
     # If all ratios are the same, equal probability of dispersal
@@ -501,6 +502,8 @@ assign_zone_dispersal = function(k_capacity, zone_density){
         weights = probs / sum(probs) # Standardize to sum to one.
 
     }
+
+    #print(rbind(ratios=c(ratios), weights=c(weights)))
 
     # Assign zone dispersal
     dispersal_zone = sample(1:zones, 1, prob=weights)

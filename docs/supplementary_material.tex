@@ -1,0 +1,116 @@
+\documentclass[a4paper]{article}
+
+\usepackage[english]{babel}
+\usepackage[utf8x]{inputenc}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage[left=1.25 in, right=1.25 in, top=1.25 in, bottom=1.25 in]{geometry}
+\usepackage{gensymb}
+\usepackage{hyperref}
+\usepackage{bbold}
+
+
+% Bibliography
+\usepackage[numbers, compress]{natbib} % Bibliography - APA
+\bibpunct{(}{)}{;}{a}{}{,}
+
+\usepackage{lineno} % Line numbers
+\def\linenumberfont{\normalfont\footnotesize\ttfamily}
+\setlength\linenumbersep{0.2 in}
+
+\usepackage{setspace}
+
+
+\begin{document}
+
+\doublespacing
+\linenumbers
+
+\noindent
+{\Large\textbf{Supplementary Material}}
+
+\section{The ABC-SMC method}
+
+To parameterize the unknown parameters in the
+raccoon-\emph{B. procyonis} IBM with the ABC-SMC method, we used either ``\emph{in silico} observed'' or ``empirically oberved'' age-abundance and
+prevalence profiles for raccoons and \emph{B. procyonis}. For many mammal macroparasite
+systems, this type of intensity and prevalence data is the best
+available parasitological data as longitudinal, individual-based
+measures of worm intensity are nearly impossible due to both the
+difficulty of re-trapping individual hosts and the destructive nature of
+measuring parasite loads.
+Therefore, developing methods to estimate transmission and
+susceptibility parameters from this type of data is important for a
+wide-range of host-macroparasite systems.
+
+The ABC-SMC algorithm is as follows \citep{Toni2009,Sisson2009,Beaumont2010}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  We specified uniform priors around our four unknown transmission and
+  susceptibility parameters: $\mu_{\text{encounter}} \sim \text{Uniform}(10, 1000)$, $k'_{\text{encounter}} = \frac{1}{1 + k_{\text{encounter}}} \sim \text{Uniform}(0, 1)$, $\text{egg encounter} \sim \text{Uniform}(0.001, 5)$, and $p_{\text{rodent encounter}} \sim \text{Uniform}(0, 1)$.
+\item
+  We drew 10,000 samples from each prior distribution such that we had
+  10,000 vectors of parameters (henceforth a parameter vector is called a particle).
+\item
+  For each of the 10,000 particles, we simulated our model for 100
+  months to remove the effects of the initial conditions.
+\item
+  For a given simulation, we then sampled 189 raccoons over the last 24
+  months of the simulation, consistent with how we sampled the ``observed'' data.
+\item
+  Using this sample, we then constructed the age-intensity/prevalence
+  profile from the simulated data and compared it to the ``observed'' age-
+  abundance/prevalence.
+\item
+  To compare the simulated and observed data, we first combined the
+  eight observed age-intensity data points, the eight observed interquartile ranges for the age-intensity data points, and the eight observed
+  age-prevalence data points into a vector S$_\text{obs}$ = [age-intensity$_1$,
+  age-intensity$_2$, \ldots{}, age-intensity$_8$, iqr$_1$, iqr$_2$, \ldots{}, iqr$_8$, age-prev$_1$,
+  age-prev$_2$, \ldots{}, age-prev$_8$]. We did the same thing for all
+  10,000 simulated age-abundance/prevalence profiles such that we had a
+  10,000 x 24 matrix (S$_\text{sim}$) where the columns matched the 24 dimensions
+  in S$_\text{obs}$ and the rows corresponded to one of the randomly drawn
+  particles.
+\item
+  To put the intensity data, IQR data, and prevalence data on the same
+  scale, we standardized each column in S$_\text{sim}$ by subtracting the mean
+  and dividing by the standard deviation of each column. We then
+  performed this identical transformation on S$_\text{obs}$ \emph{based on the
+  column-wise means and standard deviations from S$_\text{sim}$}. This
+  transformation of S$_\text{obs}$ put the values of S$_\text{obs}$ in terms of
+  deviations relative to the mean of the simulated data.
+\item
+  We then calculated the Euclidean distance between each row in S$_\text{sim}$
+  and S$_\text{obs}$ (i.e. the L2 norm), which resulted in 10,000 distance
+  measures. We then accepted the 500 particles that resulted in the
+  500 smallest distances.
+\item
+  We then equally weighted each of these 500 accepted particles and
+  resampled them with replacement 10,000 times. Upon sampling a
+  particle, we perturbed each parameter in a particle by
+ $\sigma_i \text{Uniform}(-1, 1)$ where $\sigma_i$ is the standard
+  deviation of the $i$th parameter in the 500 accepted parameters. This
+  perturbation helps the algorithm explore nearby parameter space. If this perturbation pushed any parameter inside a particle outside of the range of its prior distribution, we set the new particle equal to the old particle without perturbation [POTENTIALLY IMPLEMENT DIFFERENTLY].
+\item
+  We then repeated 3 - 9 with the 10,000 perturbed parameters 5
+  times with one important change to step 9 after the first round of
+  sampling. After identifying 500 accepted particles we used the
+  following function to weight each particle \citep{Toni2009}
+
+  \begin{equation}
+    w_t^{(i)} = \dfrac{\pi(\theta_t^{(i)})}{\sum_{j = 1}^N w_{t - 1}^{(j)} K_t(\theta_{t - 1}^{(j)}, \theta_t^{(i)})}
+  \end{equation}
+
+  where $\theta_i$ refers to particle $i$, $t$ refers to the $t$th iteration greater with $t > 1$,  $K_t(\theta_{t - 1}^{(j)}, \theta_t^{(i)})$ is probability of the current particle based on the previous particle and the perturbation kernel $K_t$. 
+  In summary, this is the
+  importance weighting of a particle that accounts for the fact that
+  particles are no longer being sampled from the prior distribution \citep{Beaumont2010}.
+\end{enumerate}
+
+
+\bibliographystyle{/Users/mqwilber/Dropbox/Documents/Bibformats/ecology.bst}
+\bibliography{/Users/mqwilber/Dropbox/Documents/Bibfiles/Projects_and_Permits-raccoon_IBM.bib}
+
+\end{document}

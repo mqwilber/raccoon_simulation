@@ -60,27 +60,35 @@ for(method in methods){
 
 ###############################################################
 
-
 # Make some plots of the ABC results
-# library(ggplot2)
-# library(data.table)
-# library(gridExtra)
+library(ggplot2)
+library(data.table)
+library(gridExtra)
 
-# # Examine the posterior distributions after ABC
-# plots = list()
+res_files = Sys.glob("test_abc_results_euclidean_*.rds")
 
-# for(i in 1:5){
+for(res_file in res_files){
 
-#     tdat = melt(abc_fit[[i]])
-#     colnames(tdat) = c("index", "param", "value")
-#     tdat$param = plyr::revalue(tdat$param, replace=c("ex"="encounter agg.", "em"="encounter mean",
-#                                   "ec"="egg contact decay", 
-#                                   "rp"="rodent encounter prob."))
+    tabc_fit = readRDS(res_file)[[1]][[1]]
+    # Examine the posterior distributions after ABC
+    plots = list()
 
-#     plots[[i]] = ggplot(data=tdat, aes(x=value)) + geom_histogram() + 
-#                     facet_wrap(~param, scales="free") +
-#                     ggtitle(paste("Iteration", i))
-# }
+    for(i in 1:5){
 
+        tdat = melt(tabc_fit[[i]])
+        colnames(tdat) = c("index", "param", "value")
+        tdat$param = plyr::revalue(tdat$param, replace=c("ex"="encounter agg.", "em"="encounter mean",
+                                      "ec"="egg contact decay", 
+                                      "rp"="rodent encounter prob."))
 
-# do.call(grid.arrange, plots)
+        plots[[i]] = ggplot(data=tdat, aes(x=value)) + geom_histogram() + 
+                        facet_wrap(~param, scales="free") +
+                        ggtitle(paste("Iteration", i))
+    }
+
+    pdf(paste("../results/plots/", strsplit(res_file, "[.]")[[1]][1], ".pdf", sep=""))
+    do.call(grid.arrange, plots)
+    dev.off()
+}
+
+## Using the the 

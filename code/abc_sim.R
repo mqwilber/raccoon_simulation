@@ -224,7 +224,7 @@ check_params = function(params_perturbed, params){
 
     dp = dim(params)
 
-    upper = matrix(rep(c(em=1000, ex=1, ec=10, rp=1), dp[1]), 
+    upper = matrix(rep(c(em=1000, ex=1, ec=20, rp=1), dp[1]), 
                                 nrow=dp[1], ncol=dp[2], byrow=T)
     lower = matrix(rep(c(em=10, ex=0, ec=0.001, rp=0), dp[1]),
                                 nrow=dp[1], ncol=dp[2], byrow=T)
@@ -249,7 +249,7 @@ get_particles = function(num_particles){
     # Prior distributions on parameters
     em = runif(num_particles, min=10, max=1000)
     ex = runif(num_particles, min=0, max=1)
-    ec = runif(num_particles, min=0.001, max=5)
+    ec = runif(num_particles, min=0.001, max=20)
     rp = runif(num_particles, min=0, max=1)
 
     params = cbind(em, ex, ec, rp)
@@ -268,7 +268,7 @@ particle_likelihood = function(particle){
     # Prior distributions on parameters
     em = dunif(particle['em'], min=10, max=1000)
     ex = dunif(particle['ex'], min=0, max=1)
-    ec = dunif(particle['ec'], min=0.001, max=5)
+    ec = dunif(particle['ec'], min=0.001, max=20)
     rp = dunif(particle['rp'], min=0, max=1)
 
     part_like = prod(c(em, ex, ec, rp))
