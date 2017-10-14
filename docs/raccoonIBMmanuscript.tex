@@ -25,14 +25,13 @@
 \bigskip
 
 \noindent
-\textbf{Authors}: Sara B. Weinstein$^1$ and Mark Q. Wilber$^2$
+\textbf{Authors}:  Mark Q. Wilber$^1$ and Sara B. Weinstein$^2$
 
 \bigskip
 
 \noindent
 \textbf{Author affiliations}: \\
-1. \\
-2. Ecology, Evolution and Marine Biology, University of California, Santa Barbara, Santa Barbara, CA, 93106 \\
+1. Ecology, Evolution and Marine Biology, University of California, Santa Barbara, Santa Barbara, CA, 93106 \\
 
 \bigskip
 
@@ -483,20 +482,31 @@ eliminating the environmental egg pool each month.  By reducing or eliminating t
 
 \subsubsection{Simulated data}
 
-Using simulated age-intensity/prevalence profiles (Fig. X) as our ``\emph{in silico} observed'' data, we explored the ability of this type of data combined with the ABC-SMC method to recover known transmission and susceptibility parameters.  Given the age-intensity, -prevalence, and -IQR data, we were able to recover three of our four transmission and susceptibility parameters: the probability of encountering and rodent, the mean number of eggs encountered per month by a raccoon, and the variability in the number of eggs encountered. The posterior distributions of these three parameters were all significantly different than the prior distributions and the true values used to simulate the data were contained in the approximate 95\% credible intervals of the posterior distributions.  [Discuss the size of the intervals]. However, we were unable to infer the contact parameter from the age-intensity/prevalence data. Additional simulations indicated that this was because the environmental egg pool was so large that egg contact was almost guaranteed regardless of the exact value of this parameter [CHECK].  In other words, the age-intensity/prevalence profile was not sensitive to deviations in the the contact parameter as it was thus not inferable from the data.
+Using simulated age-intensity/prevalence profiles (Fig. X) as our ``\emph{in silico} observed'' data, we explored the ability of this type of data combined, with the ABC-SMC method, to recover known transmission and susceptibility parameters in the raccoon-\emph{B. procyonis} systems.  Given the age-intensity, -prevalence, and -IQR data, we were able to recover three of our four transmission and susceptibility parameters: the probability of encountering and rodent, the mean number of eggs encountered per month by a raccoon, and the variability in the number of eggs encountered. The posterior distributions of these three parameters were all significantly different than the prior distributions.  While true values of the mean number of eggs encountered per month by a raccoon and the variability in the number of eggs encountered were contained in the approximate 95\% credible intervals of the  posterior distributions (Fig. X), the posterior distribution for the rodent encounter probability did not contain the true value and was biased high (Fig X.)  We show in the supplementary material that using the mean, prevalence, and IQR data is necessary to infer these three parameters from the age-intensity/prevalence profiles.
 
-Posterior predictive simulations [check terminology] showed that the posterior distributions of the unknown parameters were able to generate age-intensity/prevalence profiles consistent with the ``\emph{in silico} observed'' data. 
+These simulations showed that the observed age-intensity/prevalence profile contained almost no information about the egg contact parameter, as the prior distribution for this parameter did not change over the course of the five ABC-SMC iterations.  As shown by \cite{Toni2009}, this implies that the shape of the age-intensity/prevalence profile is relatively insensitive to this parameter in the range 0.001 - 20. Additional simulations showed that this lack of sensitivity was because a large environmental egg pool almost guaranteed egg contact, regardless of the exact value of the egg contact parameter in the range 0.001 - 20.
 
-When we only used pieces of the age-intensity/prevalence profile to fit the unknown transmission and susceptibility parameters, we lost the ability to estimate other transmission and susceptibility parameters it a fairly intuitive way. For example, when we only used the prevalence data, we were no longer able to infer the mean number of contact.  Also, when we did not include IQR, we lost the ability of to estimate the variability in the number of eggs acquired per contact. [TODO adjust as necessary]
+Using the posterior distributions predicted by the ABC-SMC method, we generated posterior predictive age-intensity/prevalence profiles and showed that they could adequately reproduce the ``\emph{in silico} observed'' data.  
 
 \subsubsection{Empirical data}
 
+The above simulation experiment confirmed that, under known conditions, age-intensity/prevalence profile contained inferable information regarding some of our unknown transmission and susceptibility parameters in the raccoon-\emph{B. procyonis} system.  Bearing in mind the above-mentioned limitations, we then fit the raccoon IBM model to the observed age-intensity/prevalence profile. Similar to the \emph{in silico} experiment, the posterior distributions of the parameters mean egg encounter and rodent encounter probability showed significant deviations from the prior distributions, indicating that the data was informing these parameter estimates.  The parameter dictating the variation in the number of eggs encountered showed showed some change in the posterior distribution, with a modality emerging near X.  However, posterior distribution of the egg contact parameter was still similar [vague, define precisely] to the prior distribution, again illustrating that this parameter was largely not inferable given the age-intensity/prevalence data.
 
+Posterior predictive simulations of the age-intensity/prevalence profile based on the estimated posterior distribution indicated a few notable discrepancies between the observed data and the best-fit model.  While the predicted age-prevalence profile was qualitatively a good match to the observed age-prevalence profile (Fig. X), the predicted age-intensity profile showed a sharper decline in worm intensity between ages X and X than did the the observed data (Fig. X).
 
+This marked discrepancy between the observed and predicted age-intensity profile led us to evaluate two additional models that allowed for either an exponential increase in concomitant immunity with increased age or a variable age at which raccoons developed concomitant immunity.  Using ABC-SMC model selection methods based on Bayes Factor \citep{Toni2009}, we sought to identify which of the three candidate transmission and susceptibility models were more supported by the data [BE CLEAERER! WHICH MODELS?].  We found that there was...[TODO...need to implement this] 
 
 \subsection{Managing human risk to \emph{B. procyonis} exposure}
 
+After identifying the best-fit transmission model, we used the model [WITH THE BEST FIT TRANSMISSION FUNCTION] to explore four management options for reducing human risk to \emph{B. procyonis} exposure: raccoon culling, raccoon birth control, raccoon baiting, and latrine clean-up.  Particularly, we were interested in whether any strategy could be as effective as latrine-cleanup in reducing human risk.  We implemented these strategies with different levels of management effort, and found that, given the best-case scenario of a monthly implementation of each strategy, none of the strategies could reduce human risk as much as latrine cleanup, without also simultaneously eliminating the raccoon population (Fig. X).  This result was expected as cleaning up the latrines is the only method that directly reduces the environmental egg pool, which is what determines human risk [citation?].
+
+However, our simulation results did show...
+
+[Our measure of ``human risk'' is proportional to human contact, such that it does not account for whether \emph{B. procyonis} will establish or cause morbidity or mortality, both which are rare events. However, ]
+
 \section{Discussion}
+
+Macroparasites can have significant impacts on the dynamics of wildlife populations and can pose a health risk to human populations.  However, building models of macroparasites in wildlife disease with the goal of managing the impact of a macroparasite is challenging due to both the complex life-cycle and load-dependent dynamics of host-macroparasite systems and the difficulty of obtaining data that can parameterize the components of the model \citep{McCallum2017}. In this study we build an individual-based model for raccoons infected with the roundworm parasite \emph{B. procyonis} and show that commonly collected age-intensity data can be used to estimate hard-to-measure parameters relating to parasite transmission and susceptibility. Moreover, this approach 
 
 Major talking points in the discussion
 

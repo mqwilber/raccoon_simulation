@@ -81,9 +81,9 @@ for(res_file in res_files){
                                       "ec"="egg contact decay", 
                                       "rp"="rodent encounter prob."))
 
-        plots[[i]] = ggplot(data=tdat, aes(x=value)) + geom_histogram() + 
+        plots[[i]] = ggplotGrob(ggplot(data=tdat, aes(x=value)) + geom_histogram() + 
                         facet_wrap(~param, scales="free") +
-                        ggtitle(paste("Iteration", i))
+                        ggtitle(paste("Iteration", i)))
     }
 
     pdf(paste("../results/plots/", strsplit(res_file, "[.]")[[1]][1], ".pdf", sep=""))

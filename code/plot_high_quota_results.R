@@ -174,55 +174,55 @@ tile_plot = ggplot(as.data.frame(tile_dt2), aes(x=as.factor(quota), y=specific_t
       theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
       ylab("Human overlap") + xlab("Management effort")
 
-#ggsave("../results/plots/tile_plot_of_management_results_test.pdf", width=12, height=8)
+ggsave("../results/plots/tile_plot_of_management_results_test.pdf", width=12, height=8)
 
-# # ################# Bar plots ######################
+################# Bar plots ######################
 
-# # base_line = full_dt[quota == 0 & generic_type == "cull human" & specific_type == "human0.1.rds", ]
+base_line = full_dt[quota == 0 & generic_type == "cull human" & specific_type == "human0.1.rds", ]
 
-# # # Only include the relevant human overlaps
-# # high_dt = full_dt[(high_low == "High") & (specific_type == "human0.1.rds" | specific_type == "human0.5.rds" | specific_type == "human0.9.rds"), ]
+# Only include the relevant human overlaps
+high_dt = full_dt[(high_low == "High") & (specific_type == "human0.1.rds" | specific_type == "human0.5.rds" | specific_type == "human0.9.rds"), ]
 
-# # # Replace values for prettier plotting
-# # high_dt$specific_type = revalue(high_dt$specific_type, 
-# #                             c("human0.1.rds"="overlap > 0.1",
-# #                               "human0.5.rds"="overlap > 0.5",
-# #                               "human0.9.rds"="overlap > 0.9"))
+# Replace values for prettier plotting
+high_dt$specific_type = revalue(high_dt$specific_type, 
+                            c("human0.1.rds"="overlap > 0.1",
+                              "human0.5.rds"="overlap > 0.5",
+                              "human0.9.rds"="overlap > 0.9"))
 
-# # high_dt$generic_type = revalue(high_dt$generic_type,
-# #                                c("birth control human"="birth control",
-# #                                  "cull human"="cull",
-# #                                  "latrine cleanup human"="latrine cleanup",
-# #                                  "worm control human"="worm control"))
+high_dt$generic_type = revalue(high_dt$generic_type,
+                               c("birth control human"="birth control",
+                                 "cull human"="cull",
+                                 "latrine cleanup human"="latrine cleanup",
+                                 "worm control human"="worm control"))
 
-# # high_dt$metric = revalue(high_dt$metric,
-# #                         c("mean_human_risk" = "Human risk",
-# #                           "mean_intensity" = "Mean infection intensity",
-# #                           "mean_prev" = "Mean prevalence",
-# #                           "mean_rac_pop"="Raccoon population",
-# #                           "mean_worm_pop"="Worm population"))
+high_dt$metric = revalue(high_dt$metric,
+                        c("mean_human_risk" = "Human risk",
+                          "mean_intensity" = "Mean infection intensity",
+                          "mean_prev" = "Mean prevalence",
+                          "mean_rac_pop"="Raccoon population",
+                          "mean_worm_pop"="Worm population"))
 
-# # base_line$metric = revalue(base_line$metric,
-# #                         c("mean_human_risk" = "Human risk",
-# #                           "mean_intensity" = "Mean infection intensity",
-# #                           "mean_prev" = "Mean prevalence",
-# #                           "mean_rac_pop"="Raccoon population",
-# #                           "mean_worm_pop"="Worm population"))
+base_line$metric = revalue(base_line$metric,
+                        c("mean_human_risk" = "Human risk",
+                          "mean_intensity" = "Mean infection intensity",
+                          "mean_prev" = "Mean prevalence",
+                          "mean_rac_pop"="Raccoon population",
+                          "mean_worm_pop"="Worm population"))
 
-# # high_dt$mean_value[is.na(high_dt$mean_value)] = 0
-# # high_dt$sd_value[is.na(high_dt$sd_value)] = 0
+high_dt$mean_value[is.na(high_dt$mean_value)] = 0
+high_dt$sd_value[is.na(high_dt$sd_value)] = 0
 
-# # high_plot = ggplot(as.data.frame(high_dt), aes(x=generic_type, y=mean_value, fill=specific_type)) + 
-# #             geom_bar(position=position_dodge(), stat="identity") +
-# #             geom_errorbar(aes(ymin=mean_value - sd_value, ymax=mean_value + sd_value),
-# #                   width=.3, 
-# #                   size=0.3,                   # Width of the error bars
-# #                   position=position_dodge(0.9)) +
-# #             scale_fill_manual(name="Human overlap", values=c("#deebf7", "#9ecae1", "#3182bd")) +
-# #             geom_hline(data=as.data.frame(base_line), aes(yintercept=mean_value), linetype="dashed") +
-# #             facet_wrap(~ metric, scales="free") + 
-# #             theme_bw() +
-# #             theme(axis.text.x = element_text(angle = 90, hjust = 1), 
-# #                                         legend.position = c(0.8, 0.2)) +
-# #             xlab("Management strategy") + ylab("Mean value +/- SE") 
-# # ggsave("../results/plots/high_effort_management_results.pdf", width=10, height=7.5)
+high_plot = ggplot(as.data.frame(high_dt), aes(x=generic_type, y=mean_value, fill=specific_type)) + 
+            geom_bar(position=position_dodge(), stat="identity") +
+            geom_errorbar(aes(ymin=mean_value - sd_value, ymax=mean_value + sd_value),
+                  width=.3, 
+                  size=0.3,                   # Width of the error bars
+                  position=position_dodge(0.9)) +
+            scale_fill_manual(name="Human overlap", values=c("#deebf7", "#9ecae1", "#3182bd")) +
+            geom_hline(data=as.data.frame(base_line), aes(yintercept=mean_value), linetype="dashed") +
+            facet_wrap(~ metric, scales="free") + 
+            theme_bw() +
+            theme(axis.text.x = element_text(angle = 90, hjust = 1), 
+                                        legend.position = c(0.8, 0.2)) +
+            xlab("Management strategy") + ylab("Mean value +/- SE") 
+ggsave("../results/plots/high_effort_management_results.pdf", width=10, height=7.5)

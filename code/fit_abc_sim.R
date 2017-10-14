@@ -2,8 +2,8 @@
 source("abc_sim.R")
 
 
-# Use the ABC method to estimate the parameters of the model given the simulated
-# data
+# # Use the ABC method to estimate the parameters of the model given the simulated
+# # data
 steps = 5
 particles = 10000
 percent_rj = 0.05
@@ -13,6 +13,7 @@ abc_fit = run_abc(steps, particles, datasource="../data/formatted/raccoon_age_in
 
 # Save results
 saveRDS(abc_fit, "fit_abc_results.rds")
+
 abc_fit = readRDS("fit_abc_results.rds")
 
 knot = FALSE
