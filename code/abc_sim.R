@@ -6,6 +6,14 @@ library(parallel)
 library(ggplot2)
 source("raccoon_fxns.R") # Contains functions for simulating IBM
 
+# Uniform upper and lower priors
+param_priors = list(RODENT_ENCOUNTER_PROB=c(min=0, max=1),
+                    ENCOUNTER_MEAN=c(min=10, max=1000),
+                    ENCOUNTER_K=c(min=0, max=1),
+                    EGG_CONTACT=c(min=0.001, max=20),
+                    AGE_SUSCEPTIBILITY=c(min=0.001, max=20),
+                    CLEAR_PROB=c(min=0, max=1))
+
 compare_to_data = function(all_res, time_steps, stat_set="all", 
                     datasource="../data/formatted/raccoon_age_intensity_full.csv", lag=24){
     # Given a simulation result, extract the simulation data that matches with
@@ -82,7 +90,7 @@ simulate_and_compare = function(i, abc_params, time_steps=100, stat_set="all",
     # ----------
     # i : int, and index for simulating and tracking progress
     # abc_params : matrix of N rows and 4 columns where the columns correspond
-    #               to the four parameters of interest drawn from their priors
+    #               to the parameters of interest drawn from their priors
     # time_steps : How many time steps to run the model.
     # stat_set : see `compare_to_data` function
     # datasource : path to the observed data
@@ -95,17 +103,10 @@ simulate_and_compare = function(i, abc_params, time_steps=100, stat_set="all",
 
     print(paste("Working on sim", i))
 
-    abc_params_vect = abc_params[i, ]
-    em = abc_params_vect["em"]
-    ex = abc_params_vect["ex"]
-    ec = abc_params_vect["ec"]
-    rp = abc_params_vect["rp"]
-    ek = (1 - ex) / ex # Convert ex to ek
+    abc_params_vect = abc_params[[i]]
 
-    params = get_simulation_parameters(TIME_STEPS=time_steps, 
-                        RODENT_ENCOUNTER_PROB=rp, ENCOUNTER_K=ek, 
-                        EGG_CONTACT=ec, ENCOUNTER_MEAN=em)
-
+    params = do.call(get_simulation_parameters, c(list(TIME_STEPS=time_steps), 
+                                                    as.list(abc_params_vect)))
     init_arrays = get_init_arrays(params) # Load in init arrays
 
     all_res = full_simulation(params, init_arrays, 
@@ -119,7 +120,7 @@ simulate_and_compare = function(i, abc_params, time_steps=100, stat_set="all",
     summary_stats = compare_to_data(all_res, time_steps, stat_set=stat_set, 
                                         datasource=datasource)
 
-    return(list(stats=summary_stats, params=c(em, ex, ec, rp)))
+    return(list(stats=summary_stats, params=abc_params_vect))
 
 }
 
@@ -217,18 +218,65 @@ resample_and_perturb = function(params, weights, num_samps, perturb_sds){
 
 }
 
-check_params = function(params_perturbed, params){
+check_params = function(params_perturbed, params, model){
     # Makes sure each parameter is within its proper bounds
     # If a pertubation pushed it out, set it to old parameters 
     # (TODO: Change this to simply resample)
 
     dp = dim(params)
 
-    upper = matrix(rep(c(em=1000, ex=1, ec=20, rp=1), dp[1]), 
-                                nrow=dp[1], ncol=dp[2], byrow=T)
-    lower = matrix(rep(c(em=10, ex=0, ec=0.001, rp=0), dp[1]),
-                                nrow=dp[1], ncol=dp[2], byrow=T)
+    if(model == 1){
 
+        upper = matrix(rep(c(ENCOUNTER_MEAN=param_priors[['ENCOUNTER_MEAN']]['max'],
+                             ENCOUNTER_K=param_priors[['ENCOUNTER_K']]['max'],
+                             EGG_CONTACT=param_priors[['EGG_CONTACT']]['max'],
+                             RODENT_ENCOUNTER_PROB=param_priors[['RODENT_ENCOUNTER_PROB']]['max']),
+                             dp[1]),
+                             nrow=dp[1], ncol=dp[2], byrow=T)
+        lower = matrix(rep(c(ENCOUNTER_MEAN=param_priors[['ENCOUNTER_MEAN']]['min'],
+                             ENCOUNTER_K=param_priors[['ENCOUNTER_K']]['min'],
+                             EGG_CONTACT=param_priors[['EGG_CONTACT']]['min'],
+                             RODENT_ENCOUNTER_PROB=param_priors[['RODENT_ENCOUNTER_PROB']]['min']),
+                             dp[1]),
+                             nrow=dp[1], ncol=dp[2], byrow=T)
+
+    } else if(model == 2){
+
+        upper = matrix(rep(c(ENCOUNTER_MEAN=param_priors[['ENCOUNTER_MEAN']]['max'],
+                             ENCOUNTER_K=param_priors[['ENCOUNTER_K']]['max'],
+                             EGG_CONTACT=param_priors[['EGG_CONTACT']]['max'],
+                             RODENT_ENCOUNTER_PROB=param_priors[['RODENT_ENCOUNTER_PROB']]['max'],
+                             AGE_SUSCEPTIBILITY=param_priors[['AGE_SUSCEPTIBILITY']]['max']),
+                             dp[1]),
+                             nrow=dp[1], ncol=dp[2], byrow=T)
+        lower = matrix(rep(c(ENCOUNTER_MEAN=param_priors[['ENCOUNTER_MEAN']]['min'],
+                             ENCOUNTER_K=param_priors[['ENCOUNTER_K']]['min'],
+                             EGG_CONTACT=param_priors[['EGG_CONTACT']]['min'],
+                             RODENT_ENCOUNTER_PROB=param_priors[['RODENT_ENCOUNTER_PROB']]['min'],
+                             AGE_SUSCEPTIBILITY=param_priors[['AGE_SUSCEPTIBILITY']]['min']),
+                             dp[1]),
+                             nrow=dp[1], ncol=dp[2], byrow=T)
+
+    } else if(model == 3){
+
+        upper = matrix(rep(c(ENCOUNTER_MEAN=param_priors[['ENCOUNTER_MEAN']]['max'],
+                             ENCOUNTER_K=param_priors[['ENCOUNTER_K']]['max'],
+                             EGG_CONTACT=param_priors[['EGG_CONTACT']]['max'],
+                             RODENT_ENCOUNTER_PROB=param_priors[['RODENT_ENCOUNTER_PROB']]['max'],
+                             AGE_SUSCEPTIBILITY=param_priors[['AGE_SUSCEPTIBILITY']]['max'],
+                             CLEAR_PROB=param_priors[['CLEAR_PROB']]['max']),
+                             dp[1]),
+                             nrow=dp[1], ncol=dp[2], byrow=T)
+        lower = matrix(rep(c(ENCOUNTER_MEAN=param_priors[['ENCOUNTER_MEAN']]['min'],
+                             ENCOUNTER_K=param_priors[['ENCOUNTER_K']]['min'],
+                             EGG_CONTACT=param_priors[['EGG_CONTACT']]['min'],
+                             RODENT_ENCOUNTER_PROB=param_priors[['RODENT_ENCOUNTER_PROB']]['min'],
+                             AGE_SUSCEPTIBILITY=param_priors[['AGE_SUSCEPTIBILITY']]['min'],
+                             CLEAR_PROB=param_priors[['CLEAR_PROB']]['max']),
+                             dp[1]),
+                             nrow=dp[1], ncol=dp[2], byrow=T)
+
+    }
 
     gt = params_perturbed >= upper
     lt = params_perturbed <= lower 
@@ -238,7 +286,7 @@ check_params = function(params_perturbed, params){
     return(params_perturbed)
 }
 
-get_particles = function(num_particles){
+get_particles = function(num_particles, model){
     # Sample num_particles parameter vectors from the prior distributions of 
     # each of the parameters.
     #
@@ -247,34 +295,35 @@ get_particles = function(num_particles){
     # : Matrix of parameters where each row is a parameter vector
 
     # Prior distributions on parameters
-    em = runif(num_particles, min=10, max=1000)
-    ex = runif(num_particles, min=0, max=1)
-    ec = runif(num_particles, min=0.001, max=20)
-    rp = runif(num_particles, min=0, max=1)
+    ENCOUNTER_MEAN = runif(num_particles, min=param_priors[['ENCOUNTER_MEAN']]['min'], 
+                                          max=param_priors[['ENCOUNTER_MEAN']]['max'])
 
-    params = cbind(em, ex, ec, rp)
+    # ENCOUNTER_K is one the scale (1 / (1 + k))
+    ENCOUNTER_K = runif(num_particles, min=param_priors[['ENCOUNTER_K']]['min'], 
+                                       max=param_priors[['ENCOUNTER_K']]['max'])
+    EGG_CONTACT = runif(num_particles, min=param_priors[['EGG_CONTACT']]['min'], 
+                                       max=param_priors[['EGG_CONTACT']]['max'])
+    RODENT_ENCOUNTER_PROB = runif(num_particles, min=param_priors[['RODENT_ENCOUNTER_PROB']]['min'], 
+                                                 max=param_priors[['RODENT_ENCOUNTER_PROB']]['max'])
+    AGE_SUSCEPTIBILITY = runif(num_particles, min=param_priors[['AGE_SUSCEPTIBILITY']]['min'], 
+                                              max=param_priors[['AGE_SUSCEPTIBILITY']]['max'])
+    CLEAR_PROB = runif(num_particles, min=param_priors[['CLEAR_PROB']]['min'], 
+                                      max=param_priors[['CLEAR_PROB']]['max'])
+
+    # Model 1 is default
+    params = cbind(ENCOUNTER_MEAN, ENCOUNTER_K, EGG_CONTACT, RODENT_ENCOUNTER_PROB)
+
+    if(model == 1)
+        params = params
+    else if(model == 2)
+        params = cbind(params, AGE_SUSCEPTIBILITY)
+    else if(model == 3)
+        params = cbind(params, AGE_SUSCEPTIBILITY, CLEAR_PROB)
+
     return(params)
 
 }
 
-particle_likelihood = function(particle){
-    # Calculate the likelihood of a particle (vector of parameters) given the
-    # prior distributions
-    #
-    # Returns
-    # -------
-    # : Matrix of parameters where each row is a parameter vector
-
-    # Prior distributions on parameters
-    em = dunif(particle['em'], min=10, max=1000)
-    ex = dunif(particle['ex'], min=0, max=1)
-    ec = dunif(particle['ec'], min=0.001, max=20)
-    rp = dunif(particle['rp'], min=0, max=1)
-
-    part_like = prod(c(em, ex, ec, rp))
-    return(part_like)
-
-}
 
 calculate_weights = function(prev_weights, prev_params, 
                     current_params, perturb_sds){
@@ -368,7 +417,7 @@ build_simulated_datasets = function(model_params, num_sets=1, TIME_STEPS=100,
     return(mock_datasets)
 }
 
-run_abc = function(steps, num_particles,  stat_set="all", method="euclidean",
+run_abc = function(steps, num_particles, models,  stat_set="all", method="euclidean",
             datasource="../data/formatted/raccoon_age_intensity_full.csv", percent_rj=0.05,
             cores=4){
     # Run the abc algorithm for some steps and some particles to fit raccoon
@@ -389,24 +438,32 @@ run_abc = function(steps, num_particles,  stat_set="all", method="euclidean",
     #       of the sampled particles after than step. Weights contains the 
     #       weights of each parameter set.
 
-    current_params = get_particles(num_particles)
+
+    # Sample models with equal weights
+    model_sample = sample(models, num_particles, replace=TRUE)
+
+    current_params_by_model = lapply(models, function(x) get_particles(sum(model_sample == x), x))
+
+    # Unpack parameters into a list
+    current_params = do.call(c, lapply(1:length(models), function(x) lapply(1:nrow(current_params_by_model[[x]]), 
+                                                    function(i) current_params_by_model[[x]][i, ])))
+
     weight_array = list() # Holds all parameter weights
     past_params = list()  # Holds all parameter sets
-
-    # Perturbation standard deviations for each parameter
-    #perturb_sds = c(em=2, ex=0.02, ec=1, rp=0.02)
 
     for(t in 1:steps){
 
         print(paste("Iteration", t))
 
-        # Parallelizing
+        # Parallelizing over all parameter sets for all models
         res = mclapply(1:num_particles, simulate_and_compare, current_params, 
                                 datasource=datasource, stat_set=stat_set,
                                 mc.cores=cores)
 
         # Extract the results
         stats = do.call(rbind, lapply(res, function(x) x$stats))
+
+        # CAN"T RBIND PARAMETERS of different 
         params = do.call(rbind, lapply(res, function(x) x$params))
 
         # Standardize and convert the predicted statistics into PCA space

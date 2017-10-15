@@ -350,14 +350,14 @@ pick_up_eggs = function(emean, ek, infect, resist, eggs_environ, load,
     if(age <= age_resistance){
         infect_red = infect_red
     } else{
-        # Exponential decline in susceptability with age after age 4
+        # Exponential decline in susceptibility with age after age 4
         infect_red = infect_red * exp(-age_immunity * (age - age_resistance))
     }
 
     # Encounter and get eggs on face and get infected with eggs
     eprob = get_eprob(eggs_environ, egg_contact_param)
 
-    new_eggs = rbinom(1, 1, eprob) * rbinom(1, rnbinom(1, size=ek, mu=emean), infect_red)
+    new_eggs = rbinom(1, 1, eprob) * rbinom(1, rnbinom(1, size=(1 - ek) / ek, mu=emean), infect_red)
     return(new_eggs)
 
 }
@@ -920,7 +920,7 @@ get_simulation_parameters = function(...){
 
     # PARASITE PARAMETERS
     ENCOUNTER_MEAN = 500 # Mean number of encountered eggs
-    ENCOUNTER_K = 1 # Aggregation parameter of the NBD...
+    ENCOUNTER_K = 0.5 # Aggregation parameter of the NBD transformed as ENCOUNTER_K = 1 / (1 + k) where k is the NBD parameter
 
     # A set of parameters that determines the
     # probability of encounter given a weighted history of prevalence. The first
