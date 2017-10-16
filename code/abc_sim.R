@@ -183,7 +183,7 @@ distances = function(stats, method="euclidean",
     return(dists)
 }
 
-resample_and_perturb = function(params, weights, num_samps, perturb_sds){
+resample_and_perturb = function(params, weights, num_samps, perturb_sds, model){
     # Bootstrap resample a set of parameters and perturb them with a uniform
     # kernel.  This is the sampling and perturbation step of the ABC-SMC
     # algorithm
@@ -199,22 +199,27 @@ resample_and_perturb = function(params, weights, num_samps, perturb_sds){
     # -------
     # : a matrix of perturbed, resampled parameters
 
-    inds = 1:nrow(params)
-    new_param_inds = sample(inds, num_samps, replace=TRUE, prob=weights)
-    new_params = params[new_param_inds, ]
+    if(nrow(params) != 0){
 
-    # Uniform perturbation
-    new_params_perturbed = t(apply(new_params, 1, 
-            function(x) x + (perturb_sds)*runif(length(x), min=-1, max=1)))
+        inds = 1:nrow(params)
+        new_param_inds = sample(inds, num_samps, replace=TRUE, prob=weights)
+        new_params = params[new_param_inds, ]
 
-    # Normal perturbation
-    # new_params_perturbed = t(apply(new_params, 1, 
-    #         function(x) rnorm(length(x), mean=x, sd=perturb_sds)))
+        # Uniform perturbation
+        new_params_perturbed = t(apply(new_params, 1, 
+                function(x) x + (perturb_sds)*runif(length(x), min=-1, max=1)))
 
-    # Ensure the newly perturbed parameters are not violating the priors. If so
-    # sample them again
-    new_params_perturbed = check_params(new_params_perturbed, new_params)
-    return(new_params_perturbed)
+        # Normal perturbation
+        # new_params_perturbed = t(apply(new_params, 1, 
+        #         function(x) rnorm(length(x), mean=x, sd=perturb_sds)))
+
+        # Ensure the newly perturbed parameters are not violating the priors. If so
+        # sample them again
+        new_params_perturbed = check_params(new_params_perturbed, new_params, model)
+        return(new_params_perturbed)
+    } else{
+        return(numeric())
+    }
 
 }
 
@@ -417,6 +422,25 @@ build_simulated_datasets = function(model_params, num_sets=1, TIME_STEPS=100,
     return(mock_datasets)
 }
 
+get_sds = function(models, new_params, new_model_sample, old_perturb_sds){
+    # Get the standard deviations necessary for pertubring a kernel
+
+    new_perturb_sds = list()
+    for(x in models){
+
+        psds = apply(do.call(rbind, new_params[new_model_sample == x]), 2, sd)
+
+        # If these is only one kernel (i.e. SD doesn't exist) use old sds
+        if(all(is.na(psds)))
+            psds = old_perturb_sds[[x]]
+
+        new_perturb_sds[[x]]  = psds
+    }
+
+    return(new_perturb_sds)
+}
+
+
 run_abc = function(steps, num_particles, models,  stat_set="all", method="euclidean",
             datasource="../data/formatted/raccoon_age_intensity_full.csv", percent_rj=0.05,
             cores=4){
@@ -440,16 +464,21 @@ run_abc = function(steps, num_particles, models,  stat_set="all", method="euclid
 
 
     # Sample models with equal weights
-    model_sample = sample(models, num_particles, replace=TRUE)
+    models = models[order(models)]
+    current_model_sample = sample(models, num_particles, replace=TRUE)
+    current_model_sample = current_model_sample[order(current_model_sample)]
 
-    current_params_by_model = lapply(models, function(x) get_particles(sum(model_sample == x), x))
+    current_params_by_model = lapply(models, function(x) get_particles(sum(current_model_sample == x), x))
 
     # Unpack parameters into a list
     current_params = do.call(c, lapply(1:length(models), function(x) lapply(1:nrow(current_params_by_model[[x]]), 
                                                     function(i) current_params_by_model[[x]][i, ])))
 
+    perturb_sds = lapply(models, function(x) apply(do.call(rbind, current_params[current_model_sample == x]), 2, sd))
+
     weight_array = list() # Holds all parameter weights
     past_params = list()  # Holds all parameter sets
+    past_models = list()
 
     for(t in 1:steps){
 
@@ -463,8 +492,8 @@ run_abc = function(steps, num_particles, models,  stat_set="all", method="euclid
         # Extract the results
         stats = do.call(rbind, lapply(res, function(x) x$stats))
 
-        # CAN"T RBIND PARAMETERS of different 
-        params = do.call(rbind, lapply(res, function(x) x$params))
+        # Extract the parameter values and put them in a list
+        params = lapply(res, function(x) x$params)
 
         # Standardize and convert the predicted statistics into PCA space
         dists = distances(stats, method=method, stat_set=stat_set, 
@@ -475,26 +504,55 @@ run_abc = function(steps, num_particles, models,  stat_set="all", method="euclid
         lowest_inds = dists < lower
 
         # Get the new params
-        new_params = params[lowest_inds, ]
+        new_params = params[lowest_inds]
         past_params[[t]] = new_params
+
+        # Update and save model indices
+        new_model_sample = current_model_sample[lowest_inds]
+        past_models[[t]] = new_model_sample
 
         # Calculate weights
         if(t == 1){
-            weights = rep(1 / nrow(new_params), nrow(new_params))
+            # Compute models separately as lists and recombine
+            weights = do.call(c, lapply(models, function(x) rep(1  / sum(new_model_sample == x), sum(new_model_sample == x))))
         } else{
-            weights = calculate_weights(weight_array[[t - 1]], prev_params, 
-                                                new_params, perturb_sds)
+
+            weights = do.call(c, lapply(models, function(x) calculate_weights(weight_array[[t - 1]][past_models[[t - 1]] == x], 
+                                                  toarray(prev_params[past_models[[t - 1]] == x]), 
+                                                  toarray(new_params[new_model_sample == x]), 
+                                                  perturb_sds[[x]])))
         }
+
         weight_array[[t]] = weights
 
         # Perturb using uniform perturbation
-        perturb_sds = apply(new_params, 2, sd) #(apply(new_params, 2, max) - apply(new_params, 2, min)) * 0.5 # From Filippi 2012
-        current_params = resample_and_perturb(new_params, weights, 
-                                    num_particles, perturb_sds)
+        perturb_sds = get_sds(models, new_params, new_model_sample, perturb_sds)
+
+        # Sample new model indexes from model prior
+        current_model_sample = sample(models, num_particles, replace=TRUE)
+        current_model_sample = current_model_sample[order(current_model_sample)]
+        current_params = do.call(c, lapply(models, function(x) tolist(resample_and_perturb(toarray(new_params[new_model_sample == x]), 
+                                                 weights[new_model_sample == x], 
+                                                 sum(current_model_sample == x), 
+                                                 perturb_sds[[x]], x))))
 
         prev_params = new_params
     }
 
-    return(list(past_params=past_params, weight_array=weight_array))
+    return(list(past_params=past_params, weight_array=weight_array, past_models=past_models))
+}
+
+toarray = function(x){
+    if(length(x) == 0)
+        return(numeric())
+    else
+        return(do.call(rbind, x))
+}
+
+tolist = function(x){
+    if(length(x) == 0)
+        return(list())
+    else
+        return(lapply(1:nrow(x), function(i) x[i, ]))
 }
 

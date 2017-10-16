@@ -10,31 +10,31 @@ set.seed(5)
 # Set default model parameters that we will try to estimate
 # AGE_SUSCEPTIBILITY and CLEAR_PROB will not be estimated so they are set to 
 # default values.  AGE_EGG_RESISTANCE is fixed at 4. 
-model_params = list(RODENT_ENCOUNTER_PROB=0.8,
-                        ENCOUNTER_K=0.6,
-                        EGG_CONTACT=3.696582, 
-                        ENCOUNTER_MEAN=459.174, 
-                        AGE_SUSCEPTIBILITY=10000, 
-                        CLEAR_PROB=0, 
-                        AGE_EGG_RESISTANCE=4)
+# model_params = list(RODENT_ENCOUNTER_PROB=0.8,
+#                         ENCOUNTER_K=0.6,
+#                         EGG_CONTACT=3.696582, 
+#                         ENCOUNTER_MEAN=459.174, 
+#                         AGE_SUSCEPTIBILITY=10000, 
+#                         CLEAR_PROB=0, 
+#                         AGE_EGG_RESISTANCE=4)
 
-sim_data = build_simulated_datasets(model_params, num_sets=1, TIME_STEPS=100,
-                datasource="../data/formatted/raccoon_age_intensity_full.csv")[[1]]
+# sim_data = build_simulated_datasets(model_params, num_sets=1, TIME_STEPS=100,
+#                 datasource="../data/formatted/raccoon_age_intensity_full.csv")[[1]]
 
-# Convert sim data to correct format and save
-sim_data = as.data.frame(sim_data)
-colnames(sim_data) = c("sim_num", "abundance", "prev", "iqr", "age_lower")
-sim_data$prev = sim_data$prev * 100
-sim_data$age_upper = c(3, 4, 5, 7, 12, 26, 48, 77)
-sim_data$sample_size = c(17, 26, 37, 27, 22, 26, 21, 13)
-write.csv(sim_data, "sim_data.csv", row.names=FALSE)
+# # Convert sim data to correct format and save
+# sim_data = as.data.frame(sim_data)
+# colnames(sim_data) = c("sim_num", "abundance", "prev", "iqr", "age_lower")
+# sim_data$prev = sim_data$prev * 100
+# sim_data$age_upper = c(3, 4, 5, 7, 12, 26, 48, 77)
+# sim_data$sample_size = c(17, 26, 37, 27, 22, 26, 21, 13)
+#write.csv(sim_data, "sim_data.csv", row.names=FALSE)
 
 ###############################################################
 
 ############# LOOP THROUGH DIFFERENT ABC STRATEGIES ###########
 
-methods = c("euclidean", "manhattan")
-stat_sets = c("means", "prevs", "means_prevs", "all")
+methods = c("euclidean") #c("euclidean", "manhattan")
+stat_sets = c("all") #c("means", "prevs", "means_prevs", "all")
  
 
 for(method in methods){
@@ -44,51 +44,51 @@ for(method in methods){
 
         # Use the ABC method to estimate the parameters of the model given the simulated
         # data
-        steps = 5
-        particles = 10000
-        percent_rj = 0.05
-        cores = 10
-        abc_fit = run_abc(4, 24, method=method, stat_set=stat_set, 
-                            datasource="sim_data.csv", percent_rj=.50, cores=4)
+        steps = 3 #5
+        particles = 12#10000
+        percent_rj = 0.5 #0.05
+        cores = 4 #10
+        abc_fit = run_abc(steps, particles, models=c(1, 2), method=method, stat_set=stat_set, 
+                            datasource="sim_data.csv", percent_rj=percent_rj, cores=cores)
 
         # Save results
-        sim_results = list(abc_fit, model_params)
-        saveRDS(sim_results, paste("test_abc_results", "_", method, "_", 
-                                                stat_set, ".rds", sep=""))
+        #sim_results = list(abc_fit, model_params)
+        # saveRDS(sim_results, paste("test_abc_results", "_", method, "_", 
+        #                                         stat_set, ".rds", sep=""))
     }
 }
 
 ###############################################################
 
-# Make some plots of the ABC results
-library(ggplot2)
-library(data.table)
-library(gridExtra)
+# # Make some plots of the ABC results
+# library(ggplot2)
+# library(data.table)
+# library(gridExtra)
 
-res_files = Sys.glob("test_abc_results_euclidean_*.rds")
+# res_files = Sys.glob("test_abc_results_euclidean_*.rds")
 
-for(res_file in res_files){
+# for(res_file in res_files){
 
-    tabc_fit = readRDS(res_file)[[1]][[1]]
-    # Examine the posterior distributions after ABC
-    plots = list()
+#     tabc_fit = readRDS(res_file)[[1]][[1]]
+#     # Examine the posterior distributions after ABC
+#     plots = list()
 
-    for(i in 1:5){
+#     for(i in 1:5){
 
-        tdat = melt(tabc_fit[[i]])
-        colnames(tdat) = c("index", "param", "value")
-        tdat$param = plyr::revalue(tdat$param, replace=c("ex"="encounter agg.", "em"="encounter mean",
-                                      "ec"="egg contact decay", 
-                                      "rp"="rodent encounter prob."))
+#         tdat = melt(tabc_fit[[i]])
+#         colnames(tdat) = c("index", "param", "value")
+#         tdat$param = plyr::revalue(tdat$param, replace=c("ex"="encounter agg.", "em"="encounter mean",
+#                                       "ec"="egg contact decay", 
+#                                       "rp"="rodent encounter prob."))
 
-        plots[[i]] = ggplotGrob(ggplot(data=tdat, aes(x=value)) + geom_histogram() + 
-                        facet_wrap(~param, scales="free") +
-                        ggtitle(paste("Iteration", i)))
-    }
+#         plots[[i]] = ggplotGrob(ggplot(data=tdat, aes(x=value)) + geom_histogram() + 
+#                         facet_wrap(~param, scales="free") +
+#                         ggtitle(paste("Iteration", i)))
+#     }
 
-    pdf(paste("../results/plots/", strsplit(res_file, "[.]")[[1]][1], ".pdf", sep=""))
-    do.call(grid.arrange, plots)
-    dev.off()
-}
+#     pdf(paste("../results/plots/", strsplit(res_file, "[.]")[[1]][1], ".pdf", sep=""))
+#     do.call(grid.arrange, plots)
+#     dev.off()
+# }
 
-## Using the the 
+# ## Using the the 
