@@ -194,6 +194,10 @@ resample_and_perturb = function(params, weights, num_samps, perturb_sds, model){
     # weights : weights on each of the parameter vectors
     # num_samps : Number of bootstrap resamples to perform
     # perturb_sds : The perturbation standard deviations
+    # model: Either 1, 2, or 3.  
+    #          1: Model with concomitant immunity starting at some age. 
+    #          2: Model with concomitant immunity gradually increasing
+    #          3: Model with concomitant immunity gradually increasing and worm clearance.
     #
     # Returns
     # -------
@@ -227,6 +231,15 @@ check_params = function(params_perturbed, params, model){
     # Makes sure each parameter is within its proper bounds
     # If a pertubation pushed it out, set it to old parameters 
     # (TODO: Change this to simply resample)
+    #
+    # Parameters
+    # ----------
+    # params_perturbed : An array of perturbed parameters
+    # params : An array of unperturbed parameters
+    # model: Either 1, 2, or 3.  
+    #          1: Model with concomitant immunity starting at some age. 
+    #          2: Model with concomitant immunity gradually increasing
+    #          3: Model with concomitant immunity gradually increasing and worm clearance.
 
     dp = dim(params)
 
@@ -388,11 +401,8 @@ build_simulated_datasets = function(model_params, num_sets=1, TIME_STEPS=100,
     #        CLEAR_PROB, AGE_EGG_RESISTANCE
     # TIME_STEPS: Number of time_steps to run the model. 
 
-    params = get_simulation_parameters(TIME_STEPS=TIME_STEPS, 
-                        RODENT_ENCOUNTER_PROB=model_params[['RODENT_ENCOUNTER_PROB']], #median_params['rp'], 
-                        ENCOUNTER_K=model_params[["ENCOUNTER_K"]],
-                        EGG_CONTACT=model_params[['EGG_CONTACT']],
-                        ENCOUNTER_MEAN=model_params[['ENCOUNTER_MEAN']]) #median_params['em'],
+    params = do.call(get_simulation_parameters, c(list(TIME_STEPS=TIME_STEPS), 
+                                                    model_params))
 
     init_arrays = get_init_arrays(params) # Load in init arrays
     all_res = full_simulation(params, init_arrays, 
@@ -442,8 +452,8 @@ get_sds = function(models, new_params, new_model_sample, old_perturb_sds){
 
 
 run_abc = function(steps, num_particles, models,  stat_set="all", method="euclidean",
-            datasource="../data/formatted/raccoon_age_intensity_full.csv", percent_rj=0.05,
-            cores=4){
+            datasource="../data/formatted/raccoon_age_intensity_full.csv", 
+            percent_rj=0.05, cores=4){
     # Run the abc algorithm for some steps and some particles to fit raccoon
     # model based on some age-intensity profile in datasource.
     # 
@@ -454,6 +464,10 @@ run_abc = function(steps, num_particles, models,  stat_set="all", method="euclid
     # stat_set : str, see `compare_to_data` function
     # method : str, method for calculating distance
     # datasource: str, path to the data to which the model is being fit
+    # models : Any combination of 1, 2, or 3.  
+    #          1: Model with concomitant immunity starting at some age. 
+    #          2: Model with concomitant immunity gradually increasing
+    #          3: Model with concomitant immunity gradually increasing and worm clearance.
     #
     # Returns
     # -------
@@ -465,7 +479,7 @@ run_abc = function(steps, num_particles, models,  stat_set="all", method="euclid
 
     # Sample models with equal weights
     models = models[order(models)]
-    current_model_sample = sample(models, num_particles, replace=TRUE)
+    current_model_sample = unlist(sample(as.list(models), num_particles, replace=TRUE))
     current_model_sample = current_model_sample[order(current_model_sample)]
 
     current_params_by_model = lapply(models, function(x) get_particles(sum(current_model_sample == x), x))
