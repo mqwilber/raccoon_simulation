@@ -12,7 +12,8 @@ param_priors = list(RODENT_ENCOUNTER_PROB=c(min=0, max=1),
                     ENCOUNTER_K=c(min=0, max=1),
                     EGG_CONTACT=c(min=0.001, max=20),
                     AGE_SUSCEPTIBILITY=c(min=0.001, max=20),
-                    CLEAR_PROB=c(min=0, max=1))
+                    CLEAR_PROB=c(min=0, max=1),
+                    AGE_EGG_RESISTANCE=c(min=0, max=10))
 
 compare_to_data = function(all_res, time_steps, stat_set="all", 
                     datasource="../data/formatted/raccoon_age_intensity_full.csv", lag=24){
@@ -194,10 +195,12 @@ resample_and_perturb = function(params, weights, num_samps, perturb_sds, model){
     # weights : weights on each of the parameter vectors
     # num_samps : Number of bootstrap resamples to perform
     # perturb_sds : The perturbation standard deviations
-    # model: Either 1, 2, or 3.  
-    #          1: Model with concomitant immunity starting at some age. 
-    #          2: Model with concomitant immunity gradually increasing
-    #          3: Model with concomitant immunity gradually increasing and worm clearance.
+    # model: Either 1, 2, 3, 4, or 5.  
+    #          1: Model with concomitant immunity starting at age 4. 
+    #          2: Model with concomitant immunity gradually increasing at age 4.
+    #          3: Model with concomitant immunity gradually increasing at 4 months and worm clearance.
+    #          4: Model with concomitant immunity gradually increasing a fitted age and worm clearance 
+    #          5: Same as model 4, but clearance probability is 0.
     #
     # Returns
     # -------
@@ -236,10 +239,12 @@ check_params = function(params_perturbed, params, model){
     # ----------
     # params_perturbed : An array of perturbed parameters
     # params : An array of unperturbed parameters
-    # model: Either 1, 2, or 3.  
-    #          1: Model with concomitant immunity starting at some age. 
-    #          2: Model with concomitant immunity gradually increasing
-    #          3: Model with concomitant immunity gradually increasing and worm clearance.
+    # model: Either 1, 2, 3, 4, or 5.  
+    #          1: Model with concomitant immunity starting at age 4. 
+    #          2: Model with concomitant immunity gradually increasing at age 4.
+    #          3: Model with concomitant immunity gradually increasing at 4 months and worm clearance.
+    #          4: Model with concomitant immunity gradually increasing a fitted age and worm clearance 
+    #          5: Same as model 4, but clearance probability is 0.
 
     dp = dim(params)
 
@@ -290,7 +295,47 @@ check_params = function(params_perturbed, params, model){
                              EGG_CONTACT=param_priors[['EGG_CONTACT']]['min'],
                              RODENT_ENCOUNTER_PROB=param_priors[['RODENT_ENCOUNTER_PROB']]['min'],
                              AGE_SUSCEPTIBILITY=param_priors[['AGE_SUSCEPTIBILITY']]['min'],
-                             CLEAR_PROB=param_priors[['CLEAR_PROB']]['max']),
+                             CLEAR_PROB=param_priors[['CLEAR_PROB']]['min']),
+                             dp[1]),
+                             nrow=dp[1], ncol=dp[2], byrow=T)
+
+    } else if(model == 4){
+
+        upper = matrix(rep(c(ENCOUNTER_MEAN=param_priors[['ENCOUNTER_MEAN']]['max'],
+                             ENCOUNTER_K=param_priors[['ENCOUNTER_K']]['max'],
+                             EGG_CONTACT=param_priors[['EGG_CONTACT']]['max'],
+                             RODENT_ENCOUNTER_PROB=param_priors[['RODENT_ENCOUNTER_PROB']]['max'],
+                             AGE_SUSCEPTIBILITY=param_priors[['AGE_SUSCEPTIBILITY']]['max'],
+                             CLEAR_PROB=param_priors[['CLEAR_PROB']]['max'],
+                             AGE_EGG_RESISTANCE=param_priors[['AGE_EGG_RESISTANCE']]['max']),
+                             dp[1]),
+                             nrow=dp[1], ncol=dp[2], byrow=T)
+        lower = matrix(rep(c(ENCOUNTER_MEAN=param_priors[['ENCOUNTER_MEAN']]['min'],
+                             ENCOUNTER_K=param_priors[['ENCOUNTER_K']]['min'],
+                             EGG_CONTACT=param_priors[['EGG_CONTACT']]['min'],
+                             RODENT_ENCOUNTER_PROB=param_priors[['RODENT_ENCOUNTER_PROB']]['min'],
+                             AGE_SUSCEPTIBILITY=param_priors[['AGE_SUSCEPTIBILITY']]['min'],
+                             CLEAR_PROB=param_priors[['CLEAR_PROB']]['min'],
+                             AGE_EGG_RESISTANCE=param_priors[['AGE_EGG_RESISTANCE']]['min']),
+                             dp[1]),
+                             nrow=dp[1], ncol=dp[2], byrow=T)
+
+    } else if(model == 5){
+
+        upper = matrix(rep(c(ENCOUNTER_MEAN=param_priors[['ENCOUNTER_MEAN']]['max'],
+                             ENCOUNTER_K=param_priors[['ENCOUNTER_K']]['max'],
+                             EGG_CONTACT=param_priors[['EGG_CONTACT']]['max'],
+                             RODENT_ENCOUNTER_PROB=param_priors[['RODENT_ENCOUNTER_PROB']]['max'],
+                             AGE_SUSCEPTIBILITY=param_priors[['AGE_SUSCEPTIBILITY']]['max'],
+                             AGE_EGG_RESISTANCE=param_priors[['AGE_EGG_RESISTANCE']]['max']),
+                             dp[1]),
+                             nrow=dp[1], ncol=dp[2], byrow=T)
+        lower = matrix(rep(c(ENCOUNTER_MEAN=param_priors[['ENCOUNTER_MEAN']]['min'],
+                             ENCOUNTER_K=param_priors[['ENCOUNTER_K']]['min'],
+                             EGG_CONTACT=param_priors[['EGG_CONTACT']]['min'],
+                             RODENT_ENCOUNTER_PROB=param_priors[['RODENT_ENCOUNTER_PROB']]['min'],
+                             AGE_SUSCEPTIBILITY=param_priors[['AGE_SUSCEPTIBILITY']]['min'],
+                             AGE_EGG_RESISTANCE=param_priors[['AGE_EGG_RESISTANCE']]['min']),
                              dp[1]),
                              nrow=dp[1], ncol=dp[2], byrow=T)
 
@@ -307,6 +352,13 @@ check_params = function(params_perturbed, params, model){
 get_particles = function(num_particles, model){
     # Sample num_particles parameter vectors from the prior distributions of 
     # each of the parameters.
+    # 
+    # model: Either 1, 2, 3, 4, or 5.  
+    #          1: Model with concomitant immunity starting at age 4. 
+    #          2: Model with concomitant immunity gradually increasing at age 4.
+    #          3: Model with concomitant immunity gradually increasing at 4 months and worm clearance.
+    #          4: Model with concomitant immunity gradually increasing a fitted age and worm clearance 
+    #          5: Same as model 4, but clearance probability is 0.
     #
     # Returns
     # -------
@@ -328,6 +380,9 @@ get_particles = function(num_particles, model){
     CLEAR_PROB = runif(num_particles, min=param_priors[['CLEAR_PROB']]['min'], 
                                       max=param_priors[['CLEAR_PROB']]['max'])
 
+    AGE_EGG_RESISTANCE = runif(num_particles, min=param_priors[['AGE_EGG_RESISTANCE']]['min'], 
+                                      max=param_priors[['AGE_EGG_RESISTANCE']]['max'])
+
     # Model 1 is default
     params = cbind(ENCOUNTER_MEAN, ENCOUNTER_K, EGG_CONTACT, RODENT_ENCOUNTER_PROB)
 
@@ -337,6 +392,10 @@ get_particles = function(num_particles, model){
         params = cbind(params, AGE_SUSCEPTIBILITY)
     else if(model == 3)
         params = cbind(params, AGE_SUSCEPTIBILITY, CLEAR_PROB)
+    else if(model == 4)
+        params = cbind(params, AGE_SUSCEPTIBILITY, CLEAR_PROB, AGE_EGG_RESISTANCE)
+    else if(model == 5)
+        params = cbind(params, AGE_SUSCEPTIBILITY, AGE_EGG_RESISTANCE)
 
     return(params)
 
@@ -468,6 +527,7 @@ run_abc = function(steps, num_particles, models,  stat_set="all", method="euclid
     #          1: Model with concomitant immunity starting at some age. 
     #          2: Model with concomitant immunity gradually increasing
     #          3: Model with concomitant immunity gradually increasing and worm clearance.
+    #          4: Model with concomitant immunity gradually increasing a fitted age and worm clearance 
     #
     # Returns
     # -------
@@ -543,7 +603,7 @@ run_abc = function(steps, num_particles, models,  stat_set="all", method="euclid
         perturb_sds = get_sds(models, new_params, new_model_sample, perturb_sds)
 
         # Sample new model indexes from model prior
-        current_model_sample = sample(models, num_particles, replace=TRUE)
+        current_model_sample = unlist(sample(as.list(models), num_particles, replace=TRUE))
         current_model_sample = current_model_sample[order(current_model_sample)]
         current_params = do.call(c, lapply(models, function(x) tolist(resample_and_perturb(toarray(new_params[new_model_sample == x]), 
                                                  weights[new_model_sample == x], 
