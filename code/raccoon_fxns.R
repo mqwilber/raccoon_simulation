@@ -1053,7 +1053,7 @@ get_init_arrays = function(prms){
                                         human_vect, prms$ZONES)
 
     humanrisk_array[1] = get_human_risk_metric(
-                        matrix(eggproduction_array[1, ], nrow=1, ncol=prms$ZONES), 
+                        eggproduction_array[1, , drop=F], 
                         prms$EGG_DECAY)
 
     init_arrays = list(raccoon_dead_alive_array=raccoon_dead_alive_array,

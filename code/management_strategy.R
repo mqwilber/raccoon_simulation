@@ -37,7 +37,7 @@ cores = 8
 SIMS = 40
 management_time = 100
 time_steps = 300
-use_fitted = TRUE
+use_fitted = FALSE
 
 
 # Load the ABC-SMC fitted transmission parameters
@@ -64,13 +64,14 @@ if(any(simulation_types == "single sim")) { # Run a single simulation
     latrine_cleanup_params = list(strategy="human", overlap_threshold=0.3, quota=0.5)
 
     management_time = 100
-    time_steps = 200
+    time_steps = 80
     fitted_params[['TIME_STEPS']] = time_steps
+    fitted_params$ZONES = 1
     params = do.call(get_simulation_parameters, fitted_params)
     init_arrays = get_init_arrays(params) # Load in init arrays
     all_res = full_simulation(params, init_arrays, 
                               cull_params=NULL, 
-                              birth_control_params=birth_control_params,
+                              birth_control_params=NULL,
                               worm_control_params=NULL,
                               latrine_cleanup_params=NULL, 
                               management_time=management_time,

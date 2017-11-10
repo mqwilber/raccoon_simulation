@@ -66,7 +66,7 @@ library(ggplot2)
 library(data.table)
 library(gridExtra)
 
-res_files = Sys.glob("sim_results/test_abc_results_euclidean_*.rds")
+res_files = Sys.glob("sim_results/test_abc_results_euclidean_*lowtol*.rds")
 
 true_params = list(rp=model_params[['RODENT_ENCOUNTER_PROB']],
                 ex=model_params[['ENCOUNTER_K']],
@@ -98,9 +98,9 @@ for(res_file in res_files){
                                             max=prior_params[[nm]]['upper'])
         } 
 
-        tdat$param = plyr::revalue(tdat$param, replace=c("ex"="Encounter aggregation", "em"="Encounter mean",
-                                      "ec"="Egg contact decay", 
-                                      "rp"="Rodent encounter probability"))
+        # tdat$param = plyr::revalue(tdat$param, replace=c("ex"="Encounter aggregation", "em"="Encounter mean",
+        #                               "ec"="Egg contact decay", 
+        #                               "rp"="Rodent encounter probability"))
 
         plots[[i]] = ggplotGrob(ggplot(data=tdat, aes(x=value)) + geom_density(fill="gray", alpha=0.5) + 
                         geom_density(aes(x=prior_samp), fill="blue", alpha=0.1) +
@@ -110,56 +110,55 @@ for(res_file in res_files){
                         ggtitle(paste("Iteration", i)))
     }
 
-    pdf(paste("../results/plots/", strsplit(strsplit(res_file, "[.]")[[1]][1], "[/]")[[1]][2], ".pdf", sep=""))
-    do.call(grid.arrange, plots)
-    dev.off()
+    # pdf(paste("../results/plots/", strsplit(strsplit(res_file, "[.]")[[1]][1], "[/]")[[1]][2], ".pdf", sep=""))
+    gridplots = do.call(grid.arrange, plots)
+    # dev.off()
 
-    ggsave(paste("../results/plots/", strsplit(strsplit(res_file, "[.]")[[1]][1], "[/]")[[1]][2], "_iteration5.pdf", sep=""),
-                plots[[5]])
+    # ggsave(paste("../results/plots/", strsplit(strsplit(res_file, "[.]")[[1]][1], "[/]")[[1]][2], "_iteration5.pdf", sep=""),
+    #             plots[[5]])
 
     # Plot the model predictions against model data
 
-    rand_samp = 30
-    rand_draws = list()
-    for(samp in 1:rand_samp){
-        print(paste("Sample", samp))
+    # rand_samp = 30
+    # rand_draws = list()
+    # for(samp in 1:rand_samp){
+    #     print(paste("Sample", samp))
 
-        param_samp = tabc_fit[[steps]][sample(1:nrow(tabc_fit[[steps]]), 1), ]
-        tmodel_params = list(RODENT_ENCOUNTER_PROB=param_samp['rp'], 
-                            ENCOUNTER_K=param_samp['ex'], 
-                            EGG_CONTACT=param_samp['ec'], 
-                            ENCOUNTER_MEAN=param_samp['em'])
+    #     param_samp = tabc_fit[[steps]][sample(1:nrow(tabc_fit[[steps]]), 1), ]
+    #     tmodel_params = list(RODENT_ENCOUNTER_PROB=param_samp['rp'], 
+    #                         ENCOUNTER_K=param_samp['ex'], 
+    #                         EGG_CONTACT=param_samp['ec'], 
+    #                         ENCOUNTER_MEAN=param_samp['em'])
 
-        draw_results = build_simulated_datasets(tmodel_params, num_sets=1, 
-                                TIME_STEPS=100,
-                                datasource="sim_data.csv")[[1]]
-        draw_results[, 'sim_num'] = samp
-        rand_draws[[samp]] = draw_results
-    }
+    #     draw_results = build_simulated_datasets(tmodel_params, num_sets=1, 
+    #                             TIME_STEPS=100,
+    #                             datasource="sim_data.csv")[[1]]
+    #     draw_results[, 'sim_num'] = samp
+    #     rand_draws[[samp]] = draw_results
+    # }
 
-    obs = read.csv("sim_data.csv")
-    draw_resultsdf = data.frame(do.call(rbind, rand_draws))
-    colnames(draw_resultsdf) = c("sim_num", "abundance", "prev", "iqr", "age")
-    dt = as.data.table(draw_resultsdf)
-    summ_dt = dt[, list(abundance=quantile(abundance, 0.5), 
-                        abund_lower=quantile(abundance, 0.025),
-                        abund_upper=quantile(abundance, 0.975),
-                        prev=quantile(prev, 0.5), 
-                        prev_lower=quantile(prev, 0.025),
-                        prev_upper=quantile(prev, 0.975)), by=c("age")]
+    # obs = read.csv("sim_data.csv")
+    # draw_resultsdf = data.frame(do.call(rbind, rand_draws))
+    # colnames(draw_resultsdf) = c("sim_num", "abundance", "prev", "iqr", "age")
+    # dt = as.data.table(draw_resultsdf)
+    # summ_dt = dt[, list(abundance=quantile(abundance, 0.5), 
+    #                     abund_lower=quantile(abundance, 0.025),
+    #                     abund_upper=quantile(abundance, 0.975),
+    #                     prev=quantile(prev, 0.5), 
+    #                     prev_lower=quantile(prev, 0.025),
+    #                     prev_upper=quantile(prev, 0.975)), by=c("age")]
     
-    # Compare observed ad predicted
-    abund_plot = ggplot() + geom_point(data=summ_dt, aes(x=age, y=abundance))  +
-                    geom_errorbar(data=summ_dt, aes(x=age, ymin=abund_lower, ymax=abund_upper)) +
-                    geom_point(data=obs, aes(x=age_lower + 0.5, y=abundance, color="red")) + 
-                    geom_errorbar(data=obs, aes(x=age_lower + 0.5, ymin=abund_lower, ymax=abund_upper, color="red"))
+    # # Compare observed ad predicted
+    # abund_plot = ggplot() + geom_point(data=summ_dt, aes(x=age, y=abundance))  +
+    #                 geom_errorbar(data=summ_dt, aes(x=age, ymin=abund_lower, ymax=abund_upper)) +
+    #                 geom_point(data=obs, aes(x=age_lower + 0.5, y=abundance, color="red")) 
 
 
-    prev_plot = ggplot(summ_dt, aes(x=age, y=prev)) + geom_point() + 
-                geom_errorbar(aes(x=age, ymin=prev_lower, ymax=prev_upper)) +
-                geom_point(data=obs, aes(x=age_lower, y=prev/100, color="red")) + 
-                geom_errorbar(data=obs, aes(x=age_lower, ymin=prev_lower/100, ymax=prev_upper/100, color="red")) +
-                ylim(0, 1)
+    # prev_plot = ggplot(summ_dt, aes(x=age, y=prev)) + geom_point() + 
+    #             geom_errorbar(aes(x=age, ymin=prev_lower, ymax=prev_upper)) +
+    #             geom_point(data=obs, aes(x=age_lower, y=prev/100, color="red")) + 
+    #             geom_errorbar(data=obs, aes(x=age_lower, ymin=prev_lower/100, ymax=prev_upper/100, color="red")) +
+    #             ylim(0, 1)
 }
 
 # ## Using the the 
