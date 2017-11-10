@@ -620,9 +620,9 @@ get_cumulative_egg_load = function(time, eggproduction_array, egg_decay){
     weights = exp(-egg_decay * time:1)
 
     if(time == 1){
-        eggs_remaining_vector = eggproduction_array[1:time, ] * weights
+        eggs_remaining_vector = eggproduction_array[1:time, , drop=F] * weights
     } else{
-        eggs_remaining_vector = apply(eggproduction_array[1:time, ], 2, 
+        eggs_remaining_vector = apply(eggproduction_array[1:time, ,drop=F], 2, 
                                                 function(x) sum(x*weights))
     }
     return(eggs_remaining_vector)
@@ -985,6 +985,7 @@ get_simulation_parameters = function(...){
 
     # Update if any parameters changed
     params$BIRTH_RATE = log(params$LITTER_SIZE) # Gives birth rate. Little r in ricker function
+    params$K_CAPACITY = 200*(1:params$ZONES / sum(1:params$ZONES)) # rep(200 / ZONES, ZONES) # "Carrying" capacity for raccoons.
     params$BETA = params$BIRTH_RATE / params$K_CAPACITY # From Encyclopedia of Theoretical Ecology, pg. 634.
 
     return(params)
@@ -1141,8 +1142,8 @@ full_simulation = function(prms, init_arrays, cull_params=NULL,
                 # Find minimum overlap zone to cleanup
                 lower = ceiling(latrine_cleanup_params$overlap_threshold * prms$ZONES)
 
-                    eggproduction_array[1:(time - 1), lower:prms$ZONES] = 
-                        eggproduction_array[1:(time - 1), lower:prms$ZONES] * (1 - latrine_cleanup_params$quota) # quota is an effeciency between 0 and 1
+                    eggproduction_array[1:(time - 1), lower:prms$ZONES, drop=F] = 
+                        eggproduction_array[1:(time - 1), lower:prms$ZONES, drop=F] * (1 - latrine_cleanup_params$quota) # quota is an effeciency between 0 and 1
             }
 
 
@@ -1294,7 +1295,7 @@ full_simulation = function(prms, init_arrays, cull_params=NULL,
                                             raccoon_worm_array[time, ],
                                             human_vect,
                                             prms$ZONES)
-        humanrisk_array[time] = get_human_risk_metric(eggproduction_array[1:time, ], 
+        humanrisk_array[time] = get_human_risk_metric(eggproduction_array[1:time, , drop=F], 
                                                              prms$EGG_DECAY)[time]
 
     }
