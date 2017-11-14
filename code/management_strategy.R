@@ -63,10 +63,14 @@ if(any(simulation_types == "single sim")) { # Run a single simulation
     worm_control_params = list(strategy="random", quota=10000, overlap_threshold=0.8)
     latrine_cleanup_params = list(strategy="human", overlap_threshold=0.3, quota=0.5)
 
-    management_time = 100
-    time_steps = 80
+    management_time = 300
+    time_steps = 150
     fitted_params[['TIME_STEPS']] = time_steps
     fitted_params$ZONES = 1
+    fitted_params$ENCOUNTER_K = 5.591296e-01
+    fitted_params$EGG_CONTACT = 1.726903e-05
+    fitted_params$RODENT_ENCOUNTER_PROB = 6.664052e-01
+    fitted_params$AGE_SUSCEPTIBILITY = 9.451935e+00
     params = do.call(get_simulation_parameters, fitted_params)
     init_arrays = get_init_arrays(params) # Load in init arrays
     all_res = full_simulation(params, init_arrays, 

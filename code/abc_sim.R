@@ -8,9 +8,8 @@ source("raccoon_fxns.R") # Contains functions for simulating IBM
 
 # Uniform upper and lower priors
 param_priors = list(RODENT_ENCOUNTER_PROB=c(min=0, max=1),
-                    ENCOUNTER_MEAN=c(min=10, max=1000),
                     ENCOUNTER_K=c(min=0, max=1),
-                    EGG_CONTACT=c(min=0.001, max=20),
+                    EGG_CONTACT=c(min=1e-7, max=1e-4),
                     AGE_SUSCEPTIBILITY=c(min=0.001, max=20),
                     CLEAR_PROB=c(min=0, max=1),
                     AGE_EGG_RESISTANCE=c(min=0, max=10))
@@ -105,6 +104,7 @@ simulate_and_compare = function(i, abc_params, time_steps=100, stat_set="all",
     print(paste("Working on sim", i))
 
     abc_params_vect = abc_params[[i]]
+    print(abc_params_vect)
 
     params = do.call(get_simulation_parameters, c(list(TIME_STEPS=time_steps), 
                                                     as.list(abc_params_vect)))
@@ -120,6 +120,8 @@ simulate_and_compare = function(i, abc_params, time_steps=100, stat_set="all",
 
     summary_stats = compare_to_data(all_res, time_steps, stat_set=stat_set, 
                                         datasource=datasource)
+    if(i == 15)
+      print(summary_stats)
 
     return(list(stats=summary_stats, params=abc_params_vect))
 
@@ -250,14 +252,12 @@ check_params = function(params_perturbed, params, model){
 
     if(model == 1){
 
-        upper = matrix(rep(c(ENCOUNTER_MEAN=param_priors[['ENCOUNTER_MEAN']]['max'],
-                             ENCOUNTER_K=param_priors[['ENCOUNTER_K']]['max'],
+        upper = matrix(rep(c(ENCOUNTER_K=param_priors[['ENCOUNTER_K']]['max'],
                              EGG_CONTACT=param_priors[['EGG_CONTACT']]['max'],
                              RODENT_ENCOUNTER_PROB=param_priors[['RODENT_ENCOUNTER_PROB']]['max']),
                              dp[1]),
                              nrow=dp[1], ncol=dp[2], byrow=T)
-        lower = matrix(rep(c(ENCOUNTER_MEAN=param_priors[['ENCOUNTER_MEAN']]['min'],
-                             ENCOUNTER_K=param_priors[['ENCOUNTER_K']]['min'],
+        lower = matrix(rep(c(ENCOUNTER_K=param_priors[['ENCOUNTER_K']]['min'],
                              EGG_CONTACT=param_priors[['EGG_CONTACT']]['min'],
                              RODENT_ENCOUNTER_PROB=param_priors[['RODENT_ENCOUNTER_PROB']]['min']),
                              dp[1]),
@@ -265,15 +265,13 @@ check_params = function(params_perturbed, params, model){
 
     } else if(model == 2){
 
-        upper = matrix(rep(c(ENCOUNTER_MEAN=param_priors[['ENCOUNTER_MEAN']]['max'],
-                             ENCOUNTER_K=param_priors[['ENCOUNTER_K']]['max'],
+        upper = matrix(rep(c(ENCOUNTER_K=param_priors[['ENCOUNTER_K']]['max'],
                              EGG_CONTACT=param_priors[['EGG_CONTACT']]['max'],
                              RODENT_ENCOUNTER_PROB=param_priors[['RODENT_ENCOUNTER_PROB']]['max'],
                              AGE_SUSCEPTIBILITY=param_priors[['AGE_SUSCEPTIBILITY']]['max']),
                              dp[1]),
                              nrow=dp[1], ncol=dp[2], byrow=T)
-        lower = matrix(rep(c(ENCOUNTER_MEAN=param_priors[['ENCOUNTER_MEAN']]['min'],
-                             ENCOUNTER_K=param_priors[['ENCOUNTER_K']]['min'],
+        lower = matrix(rep(c(ENCOUNTER_K=param_priors[['ENCOUNTER_K']]['min'],
                              EGG_CONTACT=param_priors[['EGG_CONTACT']]['min'],
                              RODENT_ENCOUNTER_PROB=param_priors[['RODENT_ENCOUNTER_PROB']]['min'],
                              AGE_SUSCEPTIBILITY=param_priors[['AGE_SUSCEPTIBILITY']]['min']),
@@ -282,16 +280,14 @@ check_params = function(params_perturbed, params, model){
 
     } else if(model == 3){
 
-        upper = matrix(rep(c(ENCOUNTER_MEAN=param_priors[['ENCOUNTER_MEAN']]['max'],
-                             ENCOUNTER_K=param_priors[['ENCOUNTER_K']]['max'],
+        upper = matrix(rep(c(ENCOUNTER_K=param_priors[['ENCOUNTER_K']]['max'],
                              EGG_CONTACT=param_priors[['EGG_CONTACT']]['max'],
                              RODENT_ENCOUNTER_PROB=param_priors[['RODENT_ENCOUNTER_PROB']]['max'],
                              AGE_SUSCEPTIBILITY=param_priors[['AGE_SUSCEPTIBILITY']]['max'],
                              CLEAR_PROB=param_priors[['CLEAR_PROB']]['max']),
                              dp[1]),
                              nrow=dp[1], ncol=dp[2], byrow=T)
-        lower = matrix(rep(c(ENCOUNTER_MEAN=param_priors[['ENCOUNTER_MEAN']]['min'],
-                             ENCOUNTER_K=param_priors[['ENCOUNTER_K']]['min'],
+        lower = matrix(rep(c(ENCOUNTER_K=param_priors[['ENCOUNTER_K']]['min'],
                              EGG_CONTACT=param_priors[['EGG_CONTACT']]['min'],
                              RODENT_ENCOUNTER_PROB=param_priors[['RODENT_ENCOUNTER_PROB']]['min'],
                              AGE_SUSCEPTIBILITY=param_priors[['AGE_SUSCEPTIBILITY']]['min'],
@@ -301,8 +297,7 @@ check_params = function(params_perturbed, params, model){
 
     } else if(model == 4){
 
-        upper = matrix(rep(c(ENCOUNTER_MEAN=param_priors[['ENCOUNTER_MEAN']]['max'],
-                             ENCOUNTER_K=param_priors[['ENCOUNTER_K']]['max'],
+        upper = matrix(rep(c(ENCOUNTER_K=param_priors[['ENCOUNTER_K']]['max'],
                              EGG_CONTACT=param_priors[['EGG_CONTACT']]['max'],
                              RODENT_ENCOUNTER_PROB=param_priors[['RODENT_ENCOUNTER_PROB']]['max'],
                              AGE_SUSCEPTIBILITY=param_priors[['AGE_SUSCEPTIBILITY']]['max'],
@@ -310,8 +305,7 @@ check_params = function(params_perturbed, params, model){
                              AGE_EGG_RESISTANCE=param_priors[['AGE_EGG_RESISTANCE']]['max']),
                              dp[1]),
                              nrow=dp[1], ncol=dp[2], byrow=T)
-        lower = matrix(rep(c(ENCOUNTER_MEAN=param_priors[['ENCOUNTER_MEAN']]['min'],
-                             ENCOUNTER_K=param_priors[['ENCOUNTER_K']]['min'],
+        lower = matrix(rep(c(ENCOUNTER_K=param_priors[['ENCOUNTER_K']]['min'],
                              EGG_CONTACT=param_priors[['EGG_CONTACT']]['min'],
                              RODENT_ENCOUNTER_PROB=param_priors[['RODENT_ENCOUNTER_PROB']]['min'],
                              AGE_SUSCEPTIBILITY=param_priors[['AGE_SUSCEPTIBILITY']]['min'],
@@ -322,16 +316,14 @@ check_params = function(params_perturbed, params, model){
 
     } else if(model == 5){
 
-        upper = matrix(rep(c(ENCOUNTER_MEAN=param_priors[['ENCOUNTER_MEAN']]['max'],
-                             ENCOUNTER_K=param_priors[['ENCOUNTER_K']]['max'],
+        upper = matrix(rep(c(ENCOUNTER_K=param_priors[['ENCOUNTER_K']]['max'],
                              EGG_CONTACT=param_priors[['EGG_CONTACT']]['max'],
                              RODENT_ENCOUNTER_PROB=param_priors[['RODENT_ENCOUNTER_PROB']]['max'],
                              AGE_SUSCEPTIBILITY=param_priors[['AGE_SUSCEPTIBILITY']]['max'],
                              AGE_EGG_RESISTANCE=param_priors[['AGE_EGG_RESISTANCE']]['max']),
                              dp[1]),
                              nrow=dp[1], ncol=dp[2], byrow=T)
-        lower = matrix(rep(c(ENCOUNTER_MEAN=param_priors[['ENCOUNTER_MEAN']]['min'],
-                             ENCOUNTER_K=param_priors[['ENCOUNTER_K']]['min'],
+        lower = matrix(rep(c(ENCOUNTER_K=param_priors[['ENCOUNTER_K']]['min'],
                              EGG_CONTACT=param_priors[['EGG_CONTACT']]['min'],
                              RODENT_ENCOUNTER_PROB=param_priors[['RODENT_ENCOUNTER_PROB']]['min'],
                              AGE_SUSCEPTIBILITY=param_priors[['AGE_SUSCEPTIBILITY']]['min'],
@@ -365,8 +357,6 @@ get_particles = function(num_particles, model){
     # : Matrix of parameters where each row is a parameter vector
 
     # Prior distributions on parameters
-    ENCOUNTER_MEAN = runif(num_particles, min=param_priors[['ENCOUNTER_MEAN']]['min'], 
-                                          max=param_priors[['ENCOUNTER_MEAN']]['max'])
 
     # ENCOUNTER_K is one the scale (1 / (1 + k))
     ENCOUNTER_K = runif(num_particles, min=param_priors[['ENCOUNTER_K']]['min'], 
@@ -384,7 +374,7 @@ get_particles = function(num_particles, model){
                                       max=param_priors[['AGE_EGG_RESISTANCE']]['max'])
 
     # Model 1 is default
-    params = cbind(ENCOUNTER_MEAN, ENCOUNTER_K, EGG_CONTACT, RODENT_ENCOUNTER_PROB)
+    params = cbind(ENCOUNTER_K, EGG_CONTACT, RODENT_ENCOUNTER_PROB)
 
     if(model == 1)
         params = params
