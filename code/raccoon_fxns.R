@@ -1065,9 +1065,11 @@ get_init_arrays = function(prms){
     eggenvironmental_array[1, ] = assign_egg_production(raccoon_worm_array[1, ], 
                                         human_vect, prms$ZONES, prms$WORM_REPRO)
 
-    humanrisk_array[1] = get_human_risk_metric(
-                        eggenvironmental_array[1, , drop=F], 
-                        prms$EGG_DECAY)
+    humanrisk_array[1] = sum(eggenvironmental_array[1, ]) 
+
+    # get_human_risk_metric(
+    #                     eggenvironmental_array[1, , drop=F], 
+    #                     prms$EGG_DECAY)
 
     init_arrays = list(raccoon_dead_alive_array=raccoon_dead_alive_array,
                        initial_age_vector=initial_age_vector,
