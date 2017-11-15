@@ -61,8 +61,20 @@ compare_to_data = function(all_res, time_steps, stat_set="all",
         trun_age = age_dat[age_dat$age >= lower & 
                                     age_dat$age < upper, ]
 
-        # Sample
-        inds = sample(1:nrow(trun_age), obs_dat$sample_size[i], replace=FALSE)
+        # Sample (can lead to some problems with small popuulations)
+        inds = tryCatch({
+
+            inds = sample(1:nrow(trun_age), obs_dat$sample_size[i], replace=FALSE)
+
+          }, error = function(err){
+
+            # For small populations, allow for resampling of the same individual
+            inds = sample(1:nrow(trun_age), obs_dat$sample_size[i], replace=TRUE)
+            return(inds)
+
+          })
+        #inds = sample(1:nrow(trun_age), obs_dat$sample_size[i], replace=FALSE)
+
         means[i] = mean(trun_age$worm[inds])
         prevs[i] = mean(trun_age$worm[inds] > 0)
         iqrs[i] = diff(quantile(trun_age$worm[inds], c(0.25, 0.75)))
@@ -102,9 +114,7 @@ simulate_and_compare = function(i, abc_params, time_steps=100, stat_set="all",
     #       `params`: Parameter values for each simulation
 
     print(paste("Working on sim", i))
-
     abc_params_vect = abc_params[[i]]
-    print(abc_params_vect)
 
     params = do.call(get_simulation_parameters, c(list(TIME_STEPS=time_steps), 
                                                     as.list(abc_params_vect)))
@@ -120,8 +130,6 @@ simulate_and_compare = function(i, abc_params, time_steps=100, stat_set="all",
 
     summary_stats = compare_to_data(all_res, time_steps, stat_set=stat_set, 
                                         datasource=datasource)
-    if(i == 15)
-      print(summary_stats)
 
     return(list(stats=summary_stats, params=abc_params_vect))
 
@@ -549,11 +557,13 @@ run_abc = function(steps, num_particles, models,  stat_set="all", method="euclid
         print(paste("Iteration", t))
 
         # Parallelizing over all parameter sets for all models
+        saveRDS(current_params, "current_params.rds")
         res = mclapply(1:num_particles, simulate_and_compare, current_params, 
                                 datasource=datasource, stat_set=stat_set,
                                 mc.cores=cores)
 
         # Extract the results
+        print(res)
         stats = do.call(rbind, lapply(res, function(x) x$stats))
 
         # Extract the parameter values and put them in a list
