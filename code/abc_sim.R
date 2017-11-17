@@ -61,23 +61,30 @@ compare_to_data = function(all_res, time_steps, stat_set="all",
         trun_age = age_dat[age_dat$age >= lower & 
                                     age_dat$age < upper, ]
 
-        # Sample (can lead to some problems with small popuulations)
-        inds = tryCatch({
+      if(nrow(trun_age) != 0){
 
-            inds = sample(1:nrow(trun_age), obs_dat$sample_size[i], replace=FALSE)
+          # Sample can lead to some problems with small populations
+          inds = tryCatch({
 
-          }, error = function(err){
+              inds = sample(1:nrow(trun_age), obs_dat$sample_size[i], replace=FALSE)
 
-            # For small populations, allow for resampling of the same individual
-            inds = sample(1:nrow(trun_age), obs_dat$sample_size[i], replace=TRUE)
-            return(inds)
+            }, error = function(err){
 
-          })
-        #inds = sample(1:nrow(trun_age), obs_dat$sample_size[i], replace=FALSE)
+              # For small populations, allow for resampling of the same individual
+              inds = sample(1:nrow(trun_age), obs_dat$sample_size[i], replace=TRUE)
+              return(inds)
 
-        means[i] = mean(trun_age$worm[inds])
-        prevs[i] = mean(trun_age$worm[inds] > 0)
-        iqrs[i] = diff(quantile(trun_age$worm[inds], c(0.25, 0.75)))
+            })
+
+          means[i] = mean(trun_age$worm[inds])
+          prevs[i] = mean(trun_age$worm[inds] > 0)
+          iqrs[i] = diff(quantile(trun_age$worm[inds], c(0.25, 0.75)))
+      }
+      else{ # If the whole population in the age class is dead, set all stats to 0
+          means[i] = 0
+          prevs[i] = 0
+          iqrs[i] = 0
+      }
 
     }
 
