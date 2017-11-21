@@ -19,16 +19,16 @@ model_params = list(RODENT_ENCOUNTER_PROB=0.8,
 run_sim = TRUE # IF you want to run the ABC simulation
 if(run_sim){
 
-    sim_data = build_simulated_datasets(model_params, num_sets=1, TIME_STEPS=100,
-                    datasource="../data/formatted/raccoon_age_intensity_full.csv")[[1]]
+    # sim_data = build_simulated_datasets(model_params, num_sets=1, TIME_STEPS=100,
+    #                 datasource="../data/formatted/raccoon_age_intensity_full.csv")[[1]]
 
-    # Convert sim data to correct format and save
-    sim_data = as.data.frame(sim_data)
-    colnames(sim_data) = c("sim_num", "abundance", "prev", "iqr", "age_lower")
-    sim_data$prev = sim_data$prev * 100
-    sim_data$age_upper = c(3, 4, 5, 7, 12, 26, 48, 77)
-    sim_data$sample_size = c(17, 26, 37, 27, 22, 26, 21, 13)
-    write.csv(sim_data, "sim_data_test.csv", row.names=FALSE)
+    # # Convert sim data to correct format and save
+    # sim_data = as.data.frame(sim_data)
+    # colnames(sim_data) = c("sim_num", "abundance", "prev", "iqr", "age_lower")
+    # sim_data$prev = sim_data$prev * 100
+    # sim_data$age_upper = c(3, 4, 5, 7, 12, 26, 48, 77)
+    # sim_data$sample_size = c(17, 26, 37, 27, 22, 26, 21, 13)
+    # write.csv(sim_data, "sim_data_test.csv", row.names=FALSE)
 
     ###############################################################
 
@@ -45,7 +45,7 @@ if(run_sim){
 
             # Use the ABC method to estimate the parameters of the model given the simulated
             # data
-            steps = 5
+            steps = 3
             particles = 16
             percent_rj = 0.5
             cores = 4

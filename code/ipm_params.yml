@@ -1,0 +1,20 @@
+
+# Raccoon Parameters
+baby_death: 0.089 # Weekly death probability of baby: Convert monthly death prob to weekly 1 - (.52**(1./7))**4
+old_death: 1.736111111111111e-05 # Set such that raccoons can't live past 20 years
+random_death: 0.002509430066318874 # Weekly death probability, independent of age
+egg_contact: 0.04 # Contact rate between raccoons and eggs
+age_immunity: 10000 # How quickly raccoon develops age-based immunity
+age_resistance: 4 # Months at which raccoon develops age-dependent resistance
+
+k_latrine: 1 # Aggregation of latrines/eggs in the landscape
+
+# Worm Parameters
+worm_death_rate: 0.066666666 # 1 / 15 weeks is average worm lifespan 
+infect: 0.02 # Probability of infectivity of a single parasite egg
+resist: 0.03 # How quickly a raccoon gains resistance based on previous load
+
+# Parasite-induced host mortality parameters
+death_thresh: 22 # Intercept on log-odds scale
+patho: -4.2 # Slope on log-odds scale
+
