@@ -1,7 +1,6 @@
 from __future__ import division
 import numpy as np
 import scipy.stats as stats
-import macroeco.models as md
 
 def survival_fxn(age, current_load, params):
     """
@@ -27,7 +26,7 @@ def survival_fxn(age, current_load, params):
 
     return(surv_prob)
 
-def growth_fxn(next_load, current_load, age, eggs, params):
+def _growth_fxn(next_load, current_load, age, eggs, params):
     """
     Probability of worm load transitioning from current_load to next_load
 
@@ -56,48 +55,81 @@ def growth_fxn(next_load, current_load, age, eggs, params):
     diff_worms = next_load - current_load
 
     worms_lost = np.arange(current_load + 1)
-    prob_worms_lost = stats.binom.pmf(worms_lost, 
-                                      n=current_load, 
-                                      p=1-np.exp(-params['worm_death_rate']))
+    prob_worms_lost = _worms_lost(worms_lost, current_load, params)
 
-    prob_worms_gained = _worms_gained(diff_worms + worms_lost, params,
-                                      eggs, age, current_load)
+    prob_worms_gained = _worms_gained(diff_worms + worms_lost,
+                                      eggs, age, current_load, params)
 
     prob_next_load = np.sum(prob_worms_lost*prob_worms_gained)
     return(prob_next_load)
 
-def _worms_gained(worms, params, eggs, age, current_load, 
-                            max_encounter=10000):
+growth_fxn = np.vectorize(_growth_fxn) # Vectorized version
+
+def _worms_lost(worms_lost, current_load, params):
+    """ 
+    Worms lost due to worm death 
+
+    Draw probabilities from binomial distribution
     """
-    Pick up worms from heterogeneously distributed latrines
+    prob_worms_lost = stats.binom.pmf(worms_lost, 
+                                      n=current_load, 
+                                      p=1-np.exp(-params['worm_death_rate']))
+    return(prob_worms_lost)
+
+
+def _worms_gained(worms, eggs, age, current_load, params):
+    """
+    Pick up worms from heterogeneously distributed latrines OR rodents
+
+    Parameters
+    ----------
+    worms : array
+        Possible values of worms that are gained
+    eggs : float
+        Current eggs in the environment
+    age : int
+        Current age of the raccoon in months
+    current_load : int
+        Current worm load of the raccoon
+    params : dict
+        Dictionary holding the model parameters
     """
 
-    if eggs != 0:
+    worms = np.atleast_1d(worms)
+    inds = worms >= 0
+    prob_inf = _worm_infection_prob(age, current_load, params)
+
+    # Gain worms from environment
+    if age < params['age_resistance']:
 
         # This reduces the mean eggs encountered and acquired by adjusting the mean.
-        prob_inf = _worm_infection_prob(age, current_load, params)
-        prob_worms_gained = md.nbinom.pmf(worms, 
+        zeros = np.sum(~inds)
+        prob_worms_gained = np.r_[np.array([0]*zeros), nbinom_pmf(worms[inds], 
                                 mu=params['egg_contact']*eggs*prob_inf, 
-                                k_agg=params['k_latrine'])
+                                k=params['k_latrine'])]
 
-        # Exact summation...very slow and we don't need it.
-        # prob_inf = _worm_infection_prob(age, current_load, params)
-        # eggs_cont_vects = [np.arange(worm, max_encounter + 1) for worm in worms]
-        # worm_probs = [md.nbinom.pmf(ec, mu=params['egg_contact']*eggs, k_agg=params['k_latrine'])*stats.binom.pmf(worm, n=ec, p=prob_inf) 
-        #               for worm, ec in zip(worms, eggs_cont_vects)]
+    else: # Above a certain age, raccoons get worms from rodents or raccoons
 
-        # prob_worms_gained = np.nan_to_num([np.sum(wp) for wp in worm_probs])
+        worm_vects = [np.arange(x + 1) for x in worms[inds]]
 
-    else:
-        # If there are no eggs, only can encounter 0 eggs with prob = 1
-        prob_worms_gained = (worms == 0).astype(np.int)
+        # Call the NBD once for rodents and environment...speeds things up a lot
+        environ_probs = nbinom_pmf(worm_vects[-1], 
+                            mu=params['egg_contact']*eggs*prob_inf, 
+                            k=params['k_latrine'])
 
-    return(prob_worms_gained)
+        rodent_probs = nbinom_pmf(worm_vects[-1], 
+                            mu=params['mean_rodent']*params['larval_infect']*params['rodent_contact'], 
+                            k=params['k_rodent'])
+
+        prob_worms_gained = [0 for x in worms[~inds]] + \
+                            [np.sum(environ_probs[tworms]*rodent_probs[tworms[::-1]])
+                                    for tworms in worm_vects]
+
+    return(np.array(prob_worms_gained))
 
 def _worm_infection_prob(age, load, params):
     """
     Probability of a contacted worm egg establishing as a worm in a raccoon
-
     """
 
     # Exponential decline in infectivity with load
@@ -107,8 +139,8 @@ def _worm_infection_prob(age, load, params):
         prob_inf = prob_inf
     else:
         # Exponential decline in susceptibility with age after some age
-        # TODO FIX THIS NO INFECTION LEADS TO NAN
-        prob_inf = prob_inf * np.exp(-params['age_immunity'] * age) - params['age_resistance']))
+        prob_inf = prob_inf * np.exp(-params['age_immunity'] * \
+                                        (age - params['age_resistance']))
 
     return(prob_inf)
 
@@ -132,9 +164,15 @@ def _load_dependent_survival(load, death_thresh, patho):
     Parasite load-dependent survival fxn
     """
 
-    surv_prob = np.exp(death_thresh + patho*np.log(load + 1)) / (1 + np.exp(death_thresh + patho*np.log(load + 1)))
+    surv_prob = np.exp(death_thresh + patho*np.log(load + 1)) / \
+                        (1 + np.exp(death_thresh + patho*np.log(load + 1)))
     return(surv_prob)
 
 
+def nbinom_pmf(x, mu, k):
+    """ Replace nan with 1...annoying that scipy doesn't do this"""
 
+    vals = np.atleast_1d(stats.nbinom._pmf(x, n=k, p=(k / (mu + k))))
+    vals[np.isnan(vals)] = 1 
+    return(vals)
     
