@@ -20,7 +20,7 @@
 \bigskip
 
 \noindent
-\textbf{Running title}: Managing a macroparasite: leveraging data and models to mitigate human risk from raccoon roundworm
+\textbf{Running title}: Managing a macroparasite: leveraging data and models to mitigate risk from raccoon roundworm
 
 \bigskip
 
@@ -59,14 +59,35 @@ Wildlife disease, Zoonosis, Parasite, Management\ldots{}..
 
 \section{Introduction}
 
-Rinderpest is eliminated \citep{Roeder2011}, rabies is reduced \citep{Freuling2013}, and strategies are currently being implemented to manage infectious disease in a number of other wildlife systems [CWD, Koala STDs, etc.]. In many cases, these management strategies have been
-guided by mathematical models \citep[e.g.][]{Restif2012,McCallum2017}.  Mathematical models are important when managing wildlife disease because they can be used to both inform to design of field-based management strategies and assess the efficacy of a strategy after implementation  \citep{Restif2012}.  While a number of models have been successfully applied to managing
-viral, bacterial and protozoan agents in wildlife populations [give examples, many found in McCallum], models directed
-towards managing wildlife macroparasites are still lacking \citep[][, but see X X X for macroparasite models in livestock]{McCallum2017}.
+% Rinderpest is eliminated \citep{Roeder2011}, rabies is reduced \citep{Freuling2013}, and management strategies are being implemented in a number of other wildlife systems [CWD, Koala STDs, etc.]. 
 
-The scarcity of management-based models for macroparasites in wildlife is likely for two reasons. First, macroparasites, such as helminths that do no directly reproduce within a host \citep{AndersonandMay1979}, often have complex life cycles and load-dependent effects on host fecundity and mortality. While these characteristics by no means preclude modeling of macroparasites in wildlife, they do require models that track the distribution of parasite loads across hosts in addition to the total host population and mean parasite load \citep{AndersonandMay1978,Cornell2010}.  These types of models can quickly become challenging to implement, parameterize, and analyze when they are built to ask system-specific questions regarding parasite management in wildlife systems \citep{McCallum2017}.  Second, in contrast the dramatic effects that microparasite epidemics can have on wildlife populations \citep[e.g.][]{Webb2006,Hewson2014} [others], the role of macroparasites as a general regulating factor of wildlife populations is unclear \citep{Tompkins2002,Tompkins2011}. This has potentially led to the perception that detailed macroparasite models in managed wildlife systems are less critical. However, even macroparasites that have equivocal effects on the dynamics of wildlife populations can still be an important concern for human health (Page, Graeff, Kazacos). Therefore, macroparasite models are needed that simultaneously incorporate the macroparasite dynamics in a wildlife reservoir as well as the the risk this reservoir poses to human populations.  
+% OUTLINE OF INTRO
 
-One of the major challenges when using models to manage macroparasite infections in wildlife populations is the scarcity of data.  Collecting individual-based longitudinal parasite intensity data is all but impossible in most wildlife systems due to the difficulty of consistently re-trapping individuals and the fact that accurately measuring parasite intensity often relies on sacrificing a host [citation].  Because of these challenges, the type of data that is often available in wildlife macroparasite systems is cross-sectional age-intensity/prevalence data \citep[i.e. age-intensity/prevalence profiles][]{Pacala1988,Wilson2002}.  An important question in parasite ecology is what can we infer about the host-macroparasite system given an observed age-intensity/prevalence profiles \citep{Pacala1988,Wilson2002,Duerr2003}? With limited prior knowledge about a particular system, the answer is ``not much'' given that multiple mechanisms can lead to very similar age-intensity/prevalence profiles \citep{Wilson2002,Duerr2003}.  However, given some prior knowledge about a host-macroparasite system, this type of data could still be useful for identifying the nature of important components of host-macroparasite systems, such as the structure of transmission.  If this prior knowledge, in the form of an unparameterized dynamic model, can be combined with this type of commonly collected parasitological data, it could aid in the development of empirically parameterized wildlife-macroparasite models that could be used to address questions regarding the management of human exposure risk. 
+% Two major challenges that we are addressing in this paper
+% 1. A "new" approach for modeling macroparasites (sorta)
+% - This is addressing the knowledge gap of how do we model host-macroparasite systems
+% 2. Parameter estimation in a host-macroparasite system
+% - The knowledge gap is that we don't have great data so how do we leverage this data to learn about transmission and 
+% 3. Using models to manage host-parasite systems.
+%      - McCaallum identifies a need to develop models to identify best management strategies for macroparasites
+%   - Application to raccoon roundworm
+
+
+% Paragraph 1
+% -----------
+% Begin by discussing how models have been used in disease systems to manage host parasite systems.
+
+
+Mitigating the impact of a parasite on a host population is a common goal when managing wildlife disease [TOO BROAD]. For example, extensive vaccine efforts in...  In many cases, implemented management strategies were guided by mathematical models of the host-parasite system \citep[e.g.][]{Restif2012,McCallum2017}.  Models are important when managing wildlife diseases because they can be used to both inform to design of field-based mitigation strategies and assess the efficacy of a strategy after implementation \citep{Restif2012}.  While a number of models have been successfully applied to managing viral, bacterial and fungal agents in wildlife populations [give examples, many found in McCallum], models for managing wildlife macroparasites, such as helminths and arthropod ectoparasites, are still lacking \citep[][, but see X X X for macroparasite models in livestock]{McCallum2017}.
+
+One of the major reasons for this scarcity of model-informed management of macroparasites in wildlife populations is because building [tractable] macroparasite models is challenging \citep{Hollingsworth2015,McCallum2017}. Macroparasites usually have complex life cycles and their effects on host vital rates (e.g. host mortality and fecundity) often depends on infection intensity.  While these complexities by no means preclude modeling of macroparasites, they do require models that track the distribution of parasite loads across hosts, in addition to the total host population and mean parasite load \citep{AndersonandMay1978,Cornell2010}.  While general formulations of these models have been implemented that have provided useful insight into the basic properties of host-macroparasite dynamics, system-specific macroparasite models can quickly become challenging to implement, parameterize, and analyze \citep{Hollingsworth2015,McCallum2017}.
+
+
+
+
+The scarcity of management-based models for macroparasites in wildlife is likely for two reasons. First, macroparasites, such as helminths that do no directly reproduce within a host \citep{AndersonandMay1979}, often have complex life cycles and load-dependent effects on host fecundity and mortality. While these characteristics by no means preclude modeling of macroparasites in wildlife, they do require models that track the distribution of parasite loads across hosts in addition to the total host population and mean parasite load \citep{AndersonandMay1978,Cornell2010}.  These types of models can quickly become challenging to implement, parameterize, and analyze \citep{McCallum2017}.  Second, in contrast the dramatic effects that microparasite epidemics can have on wildlife populations \citep[e.g.][]{Webb2006,Hewson2014} [others], the role of macroparasites as a general regulating factor of wildlife populations is unclear \citep{Tompkins2002,Tompkins2011}. This has potentially led to the perception that detailed macroparasite models in managed wildlife systems are less critical. However, even macroparasites that have equivocal effects on the dynamics of wildlife populations can still be an important concern for human health (Page, Graeff, Kazacos). Therefore, macroparasite models are needed that simultaneously incorporate the macroparasite dynamics in a wildlife reservoir as well as the the risk this reservoir poses to human populations.  
+
+One of the major challenges when using models to manage macroparasite infections in wildlife populations is the scarcity of data.  Collecting individual-based, longitudinal parasite intensity data is all but impossible in most wildlife systems. This is due to the difficulty of consistently re-trapping individuals and the fact that accurately measuring parasite intensity often relies on sacrificing the host [citation].  Because of these challenges, the type of data that is often available in wildlife macroparasite systems is cross-sectional age-intensity/prevalence data \citep[i.e. age-intensity/prevalence profiles][]{Pacala1988,Wilson2002}.  An important question in parasite ecology is what can we infer about the host-macroparasite system given an observed age-intensity/prevalence profiles \citep{Pacala1988,Wilson2002,Duerr2003}? With limited prior knowledge about a particular system, the answer is ``not much'' given that multiple mechanisms can lead to very similar age-intensity/prevalence profiles \citep{Wilson2002,Duerr2003}.  However, given some prior knowledge about a host-macroparasite system, this type of data could still be useful for identifying the nature of important components of host-macroparasite systems, such as the structure of transmission.  If this prior knowledge, in the form of an unparameterized dynamic model, can be combined with this type of commonly collected parasitological data, it could aid in the development of empirically parameterized wildlife-macroparasite models that could be used to address questions regarding the management of human exposure risk. 
 
 Because macroparasite models rely on individual-based models to capture the complexities of parasite load heterogeneity, age-structure, and concomitant immunity \citep[e.g.][]{Cornell2005,Drawert2017,McCallum2017} [OTHERS], linking unparameterized macroparasite models with empirically observed age-intensity/prevalence profiles is challenging.  Often these models do not have easily defined likelihood functions, such that standard likelihood-based fitting techniques can not be used. One alternative approach for fitting individual-based models to age-intensity/prevalence data is Approximate Bayesian Computing (ABC) \citep{Beaumont2010}. ABC substitutes the likelihood function with a user-defined distance function and then tries to identify a set of model parameters that minimizes the distance between an observed pattern (e.g. the observed age-intensity/prevalence profile) and the same pattern generated by the model for a given set of parameters (e.g. a simulated age-intensity/prevalence profile) \citep{Toni2009,Beaumont2010}.  The ABC method has been successfully applied in host-microparasite systems to estimate transmission dynamics from observed data \citep{Conlan2012,Kosmala2015}, yet its ability for identifying the structure of parasite transmission has not yet been demonstrated in macroparasite systems using commonly collected age-intensity/prevalence data. 
 
@@ -138,6 +159,17 @@ Using this individual-based model, we perform simulations to understand the cond
 % In this study we use a combination of previously published results, field estimated parameters, and model fitting approaches to parameterize an individual-based model of raccoon roundworm.  In this model, we track both the proximity of raccoons to human habitation as well as the within-host dynamics of raccoon roundworm. We then use this model to investigate how different management strategies affect \emph{B. procyonis} populations, raccoon populations, and human risk of infection. We find that managing human risk to raccoon roundworm via strategies such as culling, deworming, and birth control were largely ineffective for mitigating human risk. Instead, the only effective management strategy was reducing the environmental pool of parasites via cleaning latrines. 
 
 \section{Methods}
+
+Major Goals:
+
+1. Model Building
+2. Parameter Estimation
+3. Sensitivity analysis (i.e. management)
+
+\subsection
+
+
+
 
 The methods are broken into three section.  First, we provide an overview and justification of the individual-based model that we built to explore the dynamics of \emph{B. procyonis} in raccoon populations. Second, we describe how we used this model to test the ability and limitations for inferring transmission dynamics from age-intensity/prevalence data using the ABC method. Finally, after fitting this model to an empirically observed age-intensity/prevalence profile in raccoon roundworm, we describe how we implemented different potential management strategies for raccoon roundworm.
 
@@ -537,6 +569,70 @@ information, should appear in a brief statement at the end of the body
 of the text. Acknowledgments of specific author contributions to the
 paper should appear here.
 
+
+\bibliographystyle{ecology.bst}
+\bibliography{racbib.bib}
+
+\clearpage
+
+\linespread{1}
+\scriptsize
+\renewcommand{\arraystretch}{1.2}
+\begin{longtable}{p{4.5cm} p{4.5cm} p{5cm}}
+%\caption{Submodels and parameters }
+\toprule
+\textbf{Submodel/parameter description} & \textbf{Function/Value} & \textbf{Details} \\
+\midrule
+\emph{Parasite-induced host mortality}: Load-dependent
+probability of worm-induced raccoon death over a month. &
+$1 - \frac{1}{1 + e^{-(\texttt{host\_surv}_1 + \texttt{host\_surv}_2 \log(\text{load} + 1))}}$ \newline\newline $\texttt{host\_surv}_1 = -4.2$ \newline $\texttt{host\_surv}_2 = 22$ & Parameters selected to match empirical empirical data suggesting that raccoons can suffer parasite-induced mortality between 120 - 1000 worms, but still have some non-zero survival probability above 200 worms \citep{Kazacos2001} \\
+\hline
+\emph{Kit death}: The probability of a raccoon kit dying its first month & 0.31 & Based on Montgomery (1969), kit survival probability is 0.52 over 7 weeks. Assuming equal weekly survival probability, the monthly death probability is $1 - (0.52^{1/7})^4 \approx 0.31$   \\
+\hline
+\emph{Random death probability}: Monthly, age-independent probability of death & 0.01 & [TODO: Why?] \\
+\hline
+\emph{Senescence}: The monthly probability of dying due to senescence-related events increases & min(1, (1 - $1.74\times10^{-5}) \times \text{age}^2$) & Parameterized such that raccoon monthly death probability is one at and above 20 years old [citation] \\
+\hline
+\emph{First reproduction age}: The age at which a raccoon can reproduce & 10 months & [citation?] \\
+\hline
+\emph{Maximum litter size}: The maximum number of female kits in a raccoon litter & 2 kits & [Where does this come from?] \\
+\hline
+\emph{Age of egg resistance}: The age in months at which raccoons begin to develop concomitant immunity to \emph{B. procyonis} eggs & 4 months & [CITATION]  \\
+\hline
+\emph{Concomitant immunity function}: At 4 months old, raccoons begin to develop concomitant immunity such that the per month probability of an egg developing to an adult decreases. & $e^{-\texttt{conc\_immunity} \times (\text{age in months} - 4)}$ \newline\newline \texttt{conc\_immunity} = Unknown  &  The function is only applied to raccoons that are 4 months old or greater. Estimated using ABC-SMC from age-intensity/prevalence profile \citep{Weinstein2016}. \\
+\hline
+\emph{Rodent encounter probability}: The probability of raccoon encountering and consuming a rodent in a month & Unknown & Estimated using ABC from age-intensity/prevalence profile \citep{Weinstein2016}\\
+\hline
+\emph{Mouse worm mean}: Mean worm load in \emph{Peromyscus} mice & 3.49 worms per mouse & Estimated from Weinstein, unpublished [or published?] \\
+\hline
+\emph{Larval worm infectivity}: Probability of a consumed larval worm establishing & 0.25 & [Where does this come from?] \\
+\hline
+\emph{Number of eggs encountered per month}: Given an encounter with eggs in the environment, the number of eggs encountered per month by a raccoon follows a negative binomial distribution (NBD) with two parameters: \texttt{mean\_eggs} which gives the mean eggs encountered and \texttt{k\_eggs} which gives the aggregation of eggs in the environment (increased \texttt{k\_eggs} leads to less aggregation). & NBD(\texttt{mean\_eggs}, \texttt{k\_eggs}) \newline\newline \texttt{mean\_eggs}, \texttt{k\_eggs} = Unknown & Estimated using ABC from age-intensity/prevalence profile \citep{Weinstein2016} \\
+\hline
+\emph{Egg contact function}: The probability of a raccoon encountering a clump of eggs in the environment depends on the number of eggs in the environment & $1 - e^{-\texttt{contact} \times \log(\text{eggs})}$ \newline\newline \texttt{contact} = Unknown & Estimated using ABC from age-intensity/prevalence profile \citep{Weinstein2016} \\ 
+\hline
+\emph{Infectivity}: The per egg probability that, after contacting a raccoon, the egg hatches and develops into an adult worm & 0.02 & Value from \cite{Croll1982} and Woodruff 1974  \\ 
+\hline
+\emph{Resistance function}: Determines how current parasite load affects the probability of a raccoon becoming infected in a time step &  $0.02 \times e^{-\texttt{resistance} \times \text{load}}$ \newline\newline \texttt{resistance} = 0.03 parasite$^{-1}$ & Fit based on data from \cite{Croll1982} [CHECK CITATION] \\
+\hline
+\emph{Egg decay}: The decay of \emph{B. procyonis} eggs in the environment. Specifically, the contribution of past eggs to the current egg pool declines exponentially with time according to the parameter \texttt{egg\_decay}. &  $e^{-\texttt{egg\_decay} \times \text{months before present}}$ \newline\newline \texttt{egg\_decay} = 0.3 month$^{-1}$ & Parameterized such that 2\% of eggs in the environment survive after 1 year [citation] \\
+\hline
+\emph{Worm survival function}: The age-dependent probability that worm infecting a raccoon survives for a month & $\frac{1}{1 + \exp(-(\texttt{worm\_surv}_1 + \texttt{worm\_surv}_2\times \text{worm age}))}$ \newline\newline $\texttt{worm\_surv}_1 = 4.710$ \newline $\texttt{worm\_surv}_2 = 0.945$  & Parameters estimated based on data from [Olsen 1958] (See Supplementary Material)  \\
+\bottomrule
+\end{longtable}
+
+\clearpage
+
+\begin{figure}
+    \includegraphics[width=\textwidth]{images/lifecycle_model_diagram.pdf}
+    \caption{Diagram of the individual-based raccoon-\emph{B. procyonis} model.  The model tracks the raccoons demography (black lines, e.g. age, death, and reproduction), roundworm demography (red lines), and the location of raccoons in the world (blue lines).  In the model, events happen on a monthly time step and can be broken into raccoon-specific (black boxes), worm-specific (red boxes), and location specific (blue boxes) events.}
+    \label{fig:mod_diagram}
+\end{figure}
+
+
+\end{document}
+
+
 % \textbf{Literature cited}
 
 % Braae, U. C., B. Devleesschauwer, S. Gabriël, P. Dorny, N. Speybroeck,
@@ -612,67 +708,3 @@ paper should appear here.
 % 2006. Culling and cattle controls influence tuberculosis risk for
 % badgers. Proceedings of the National Academy of Sciences \textbf{103:}
 % 14713-14717.
-
-
-
-\bibliographystyle{ecology.bst}
-\bibliography{raccoon_IBM_bibiliography.bib}
-
-\clearpage
-
-\linespread{1}
-\scriptsize
-\renewcommand{\arraystretch}{1.2}
-\begin{longtable}{p{4.5cm} p{4.5cm} p{5cm}}
-%\caption{Submodels and parameters }
-\toprule
-\textbf{Submodel/parameter description} & \textbf{Function/Value} & \textbf{Details} \\
-\midrule
-\emph{Parasite-induced host mortality}: Load-dependent
-probability of worm-induced raccoon death over a month. &
-$1 - \frac{1}{1 + e^{-(\texttt{host\_surv}_1 + \texttt{host\_surv}_2 \log(\text{load} + 1))}}$ \newline\newline $\texttt{host\_surv}_1 = -4.2$ \newline $\texttt{host\_surv}_2 = 22$ & Parameters selected to match empirical empirical data suggesting that raccoons can suffer parasite-induced mortality between 120 - 1000 worms, but still have some non-zero survival probability above 200 worms \citep{Kazacos2001} \\
-\hline
-\emph{Kit death}: The probability of a raccoon kit dying its first month & 0.31 & Based on Montgomery (1969), kit survival probability is 0.52 over 7 weeks. Assuming equal weekly survival probability, the monthly death probability is $1 - (0.52^{1/7})^4 \approx 0.31$   \\
-\hline
-\emph{Random death probability}: Monthly, age-independent probability of death & 0.01 & [TODO: Why?] \\
-\hline
-\emph{Senescence}: The monthly probability of dying due to senescence-related events increases & min(1, (1 - $1.74\times10^{-5}) \times \text{age}^2$) & Parameterized such that raccoon monthly death probability is one at and above 20 years old [citation] \\
-\hline
-\emph{First reproduction age}: The age at which a raccoon can reproduce & 10 months & [citation?] \\
-\hline
-\emph{Maximum litter size}: The maximum number of female kits in a raccoon litter & 2 kits & [Where does this come from?] \\
-\hline
-\emph{Age of egg resistance}: The age in months at which raccoons begin to develop concomitant immunity to \emph{B. procyonis} eggs & 4 months & [CITATION]  \\
-\hline
-\emph{Concomitant immunity function}: At 4 months old, raccoons begin to develop concomitant immunity such that the per month probability of an egg developing to an adult decreases. & $e^{-\texttt{conc\_immunity} \times (\text{age in months} - 4)}$ \newline\newline \texttt{conc\_immunity} = Unknown  &  The function is only applied to raccoons that are 4 months old or greater. Estimated using ABC-SMC from age-intensity/prevalence profile \citep{Weinstein2016}. \\
-\hline
-\emph{Rodent encounter probability}: The probability of raccoon encountering and consuming a rodent in a month & Unknown & Estimated using ABC from age-intensity/prevalence profile \citep{Weinstein2016}\\
-\hline
-\emph{Mouse worm mean}: Mean worm load in \emph{Peromyscus} mice & 3.49 worms per mouse & Estimated from Weinstein, unpublished [or published?] \\
-\hline
-\emph{Larval worm infectivity}: Probability of a consumed larval worm establishing & 0.25 & [Where does this come from?] \\
-\hline
-\emph{Number of eggs encountered per month}: Given an encounter with eggs in the environment, the number of eggs encountered per month by a raccoon follows a negative binomial distribution (NBD) with two parameters: \texttt{mean\_eggs} which gives the mean eggs encountered and \texttt{k\_eggs} which gives the aggregation of eggs in the environment (increased \texttt{k\_eggs} leads to less aggregation). & NBD(\texttt{mean\_eggs}, \texttt{k\_eggs}) \newline\newline \texttt{mean\_eggs}, \texttt{k\_eggs} = Unknown & Estimated using ABC from age-intensity/prevalence profile \citep{Weinstein2016} \\
-\hline
-\emph{Egg contact function}: The probability of a raccoon encountering a clump of eggs in the environment depends on the number of eggs in the environment & $1 - e^{-\texttt{contact} \times \log(\text{eggs})}$ \newline\newline \texttt{contact} = Unknown & Estimated using ABC from age-intensity/prevalence profile \citep{Weinstein2016} \\ 
-\hline
-\emph{Infectivity}: The per egg probability that, after contacting a raccoon, the egg hatches and develops into an adult worm & 0.02 & Value from \cite{Croll1982} and Woodruff 1974  \\ 
-\hline
-\emph{Resistance function}: Determines how current parasite load affects the probability of a raccoon becoming infected in a time step &  $0.02 \times e^{-\texttt{resistance} \times \text{load}}$ \newline\newline \texttt{resistance} = 0.03 parasite$^{-1}$ & Fit based on data from \cite{Croll1982} [CHECK CITATION] \\
-\hline
-\emph{Egg decay}: The decay of \emph{B. procyonis} eggs in the environment. Specifically, the contribution of past eggs to the current egg pool declines exponentially with time according to the parameter \texttt{egg\_decay}. &  $e^{-\texttt{egg\_decay} \times \text{months before present}}$ \newline\newline \texttt{egg\_decay} = 0.3 month$^{-1}$ & Parameterized such that 2\% of eggs in the environment survive after 1 year [citation] \\
-\hline
-\emph{Worm survival function}: The age-dependent probability that worm infecting a raccoon survives for a month & $\frac{1}{1 + \exp(-(\texttt{worm\_surv}_1 + \texttt{worm\_surv}_2\times \text{worm age}))}$ \newline\newline $\texttt{worm\_surv}_1 = 4.710$ \newline $\texttt{worm\_surv}_2 = 0.945$  & Parameters estimated based on data from [Olsen 1958] (See Supplementary Material)  \\
-\bottomrule
-\end{longtable}
-
-\clearpage
-
-\begin{figure}
-    \includegraphics[width=\textwidth]{images/lifecycle_model_diagram.pdf}
-    \caption{Diagram of the individual-based raccoon-\emph{B. procyonis} model.  The model tracks the raccoons demography (black lines, e.g. age, death, and reproduction), roundworm demography (red lines), and the location of raccoons in the world (blue lines).  In the model, events happen on a monthly time step and can be broken into raccoon-specific (black boxes), worm-specific (red boxes), and location specific (blue boxes) events.}
-    \label{fig:mod_diagram}
-\end{figure}
-
-
-\end{document}

@@ -313,9 +313,8 @@ def full_R0(params, age_struct):
     full_D = np.zeros((num_ages*para_stages, num_ages*para_stages))
 
     # Parasite eggs to Larvae matrix
-    # TODO: Is it params['egg_contact']*racsofage or 1 -  np.exp(-params['egg_contact']*racsofage)?
-    # Seem like the latter makes more sense.
-    trans_probs = [_worm_infection_prob(age, 0, params)*(1 - np.exp(-params['egg_contact']*racsofage)) for racsofage, age in zip(age_struct, range(num_ages))]
+    # Egg contact is Negative binomial
+    trans_probs = [_worm_infection_prob(age, 0, params)*(1 - (1 + params['egg_contact']*racsofage / params['k_latrine'])**(-params['k_latrine'])) for racsofage, age in zip(age_struct, range(num_ages))]
     M_LE = np.diag(trans_probs)
     M_EL = np.diag(np.repeat(params['worm_repro'], num_ages))
 
@@ -326,6 +325,7 @@ def full_R0(params, age_struct):
     stay_larv = np.array([survival_fxn(age, 0, params)*(np.exp(-params['worm_death_rate'])) for age in range(num_ages)])
     D_LL = np.diag(1 - stay_larv)
 
+    # Build the full 
     full_M[num_ages:, :num_ages] = M_LE
     full_M[:num_ages, num_ages:] = M_EL
     full_D[:num_ages, :num_ages] = D_EE
